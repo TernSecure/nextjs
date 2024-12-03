@@ -1,6 +1,8 @@
 {
   "name": "@tern-secure/nextjs",
-  "version": "3.0.4",
+  "version": "3.1.84",
+  "type": "module",
+  "packageManager": "npm@10.9.0",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -13,90 +15,57 @@
     "url": "https://github.com/TernSecure/nextjs/issues"
   },
   "homepage": "https://github.com/tern-secure/nextjs#readme",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "scripts": {
-    "build": "tsc --build",
-    "clean": "tsc --build --clean",
-    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsup && tsc -p tsconfig.add.json",
+    "dev": "tsup --watch",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "prepublishOnly": "npm run build"
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@babel/preset-typescript": "^7.26.0",
+
     "@eslint/js": "^9.15.0",
-    "@rollup/plugin-commonjs": "^28.0.1",
-    "@rollup/plugin-node-resolve": "^15.3.0",
-    "@rollup/plugin-replace": "^6.0.1",
-    "@rollup/plugin-typescript": "^12.1.1",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.0.1",
-    "@types/jest": "^29.5.14",
     "@types/node": "^22.9.3",
     "@types/react": "^18.3.12",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
-    "autoprefixer": "^10.4.20",
+    "esbuild": "^0.24.0",
+    "esbuild-node-externals": "^1.15.0",
     "eslint": "^9.15.0",
     "eslint-plugin-react": "^7.37.2",
-    "firebase": "^11.0.2",
-    "firebase-admin": "^13.0.1",
-    "globals": "^15.12.0",
-    "husky": "^9.1.7",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "next": "^15.0.3",
-    "postcss": "^8.4.49",
-    "postcss-cli": "^11.0.0",
     "prettier": "^3.3.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "rollup": "^4.27.4",
-    "rollup-plugin-peer-deps-external": "^2.2.4",
-    "tailwindcss": "^3.4.15",
-    "ts-jest": "^29.2.5",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.2",
-    "typescript-eslint": "^8.16.0"
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
   },
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types/index.d.ts",
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "peerDependencies": {
     "firebase": "^10.0.0",
     "next": "^13.0.0 || ^14.0.0 || ^15.0.0",
     "react": "^18 || ^19.0.0-0",
     "react-dom": "^18 || ^19.0.0-0"
   },
-  "peerDependenciesMeta": {
-    "tailwindCSS": {
-      "optional": true
-    },
-    "postcss": {
-      "optional": true
-    },
-    "autoprefixer": {
-      "optional": true
-    }
-  },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     },
     "./server": {
-      "types": "./dist/server/index.d.ts",
-      "import": "./dist/server/index.js",
-      "require": "./dist/server/index.js"
-    },
-    "./styles": "./styles/index.css"
+      "types": "./dist/esm/server/index.d.ts",
+      "import": "./dist/esm/server/index.js",
+      "require": "./dist/cjs/server/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=18.17.0"
   }
 }

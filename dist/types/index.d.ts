@@ -1,40 +1,10 @@
-import type { ReactNode } from 'react';
-import { User, Auth } from 'firebase/auth';
-export interface TernSecureConfig {
-    apiKey: string;
-    authDomain: string;
-    projectId: string;
-    storageBucket: string;
-    messagingSenderId: string;
-    appId: string;
-    measurementId: string;
-}
-export interface TernSecureOptions {
-    environment?: 'development' | 'production';
-    region?: string;
-}
-export interface FirebaseState {
-    initialized: boolean;
-    error: Error | null;
-}
-export interface TernSecureState {
-    firebase: FirebaseState;
-    auth: AuthState;
-}
-export interface AuthState {
-    user: User | null;
-    loading: boolean;
-    error: Error | null;
-    isSignedIn: boolean;
-}
-export interface TernSecureContextValue {
-    _contextKey: symbol;
-    authState: AuthState;
-    auth: Auth;
-}
-export interface TernSecureContextType {
-    authState: AuthState;
-}
-export interface TernSecureProviderProps {
-    children: ReactNode;
-}
+import { TernSecureServerProvider } from './app-router/server/TernSecureServerProvider';
+import type { TernSecureState } from './app-router/client/TernSecureProvider';
+export { TernSecureAuth, TernSecureFirestore } from './utils/client-init';
+export { loadFireConfig, validateConfig } from './utils/config';
+export { signInWithEmail } from './app-router/server/auth';
+export { useAuth } from './boundary/hooks/useAuth';
+export { SignIn } from './components/sign-in';
+export declare const TernSecureProvider: typeof TernSecureServerProvider;
+export type { TernSecureState };
+//# sourceMappingURL=index.d.ts.map

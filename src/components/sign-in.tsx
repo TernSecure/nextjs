@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useState } from 'react'
-import { signInWithEmail } from '../app-router/client'
+import { signInWithEmail } from '../app-router/server/auth'
 import { styles } from '../utils/create-styles'
 
 export interface SignInProps {
