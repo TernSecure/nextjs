@@ -1,59 +1,48 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { TernSecureAuth } from '../../utils/client-init'
-import { onAuthStateChanged } from "firebase/auth"
-import { useInternalContext, TernSecureCtxProvider } from '../../boundary/TernSecureCtx'
+import React from "react"
+import dynamic from "next/dynamic"
 
-export type TernSecureState = {
-  userId: string | null
-  loading: boolean
-  error: string | null
-  isSignedIn: boolean
-}
+const TernSecureClientProvider = dynamic(
+  () => import("../../boundary/TernSecureClientProvider").then(mod => mod.TernSecureClientProvider),
+  { 
+    ssr: false
+   }
+)
 
-export const AuthStateContext = React.createContext<TernSecureState | null>(null)
-
-interface TernSecureClientProps {
-  children: React.ReactNode
-  initialState: TernSecureState
-}
-
-const auth = TernSecureAuth();
-
-export function TernSecureClientProvider({ 
-  children,
-  initialState
- }: TernSecureClientProps) {
-  const [authState, setAuthState] = useState<TernSecureState>(initialState)
-useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthState({
-          loading: false,
-          isSignedIn: true,
-          userId: user.uid,
-          error: null
-        })
-      } else {
-        setAuthState({
-          loading: false,
-          isSignedIn: false,
-          userId: null,
-          error: null
-        })
-      }
-    })
-    
-    return () => unsubscribe()
-  }, [])
-
-
+// Loading fallback component
+/*function TernSecureLoadingFallback() {
   return (
-    <TernSecureCtxProvider>
-      <AuthStateContext.Provider value={authState}>
-      {children}
-      </AuthStateContext.Provider>
-    </TernSecureCtxProvider>
+    <div>
+      <span className="sr-only">Loading...</span>
+    </div>
+  )
+}*/
+/**
+ * Root Provider for TernSecure
+ * Use this in your Next.js App Router root layout
+ * Automatically handles client/server boundary and authentication state
+ * 
+ * @example
+ * // app/layout.tsx
+ * import { TernSecureProvider } from '@tern/secure'
+ * 
+ * export default function RootLayout({ children }) {
+ *   return (
+ *     <html>
+ *       <body>
+ *         <TernSecureProvider>
+ *           {children}
+ *         </TernSecureProvider>
+ *       </body>
+ *     </html>
+ *   )
+ * }
+ */
+export function TernSecureProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <TernSecureClientProvider>
+        {children}
+    </TernSecureClientProvider>
   )
 }

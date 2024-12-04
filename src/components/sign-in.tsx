@@ -1,12 +1,13 @@
-import * as React from 'react'
+'use client'
+
+import React from 'react'
 import { useState } from 'react'
-import { signInWithEmail } from '../app-router/server/auth'
+import { signInWithEmail } from '../app-router/client/auth'
 import { styles } from '../utils/create-styles'
+import { useRouter } from 'next/navigation'
 
 export interface SignInProps {
-  onSuccess?: () => void
   onError?: (error: Error) => void
-  redirectUrl?: string
   className?: string
   style?: React.CSSProperties
   customStyles?: {
@@ -24,29 +25,25 @@ export interface SignInProps {
 }
 
 export function SignIn({ 
-  onSuccess, 
   onError, 
-  redirectUrl,
-  className = '',
+  className,
   style,
   customStyles = {}
 }: SignInProps) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
-
     try {
-      await signInWithEmail({ email, password })
-      onSuccess?.()
-      
-      if (redirectUrl) {
-        window.location.href = redirectUrl
+      const user = await signInWithEmail(email, password)
+      if (user) {
+        router.push('/')
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in'
@@ -88,11 +85,12 @@ export function SignIn({
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className={`${styles.input} ${customStyles.input || ''}`}
                 disabled={loading}
                 aria-required="true"
@@ -105,11 +103,12 @@ export function SignIn({
               </label>
               <input
                 id="password"
+                name="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className={`${styles.input} ${customStyles.input || ''}`}
                 disabled={loading}
                 aria-required="true"

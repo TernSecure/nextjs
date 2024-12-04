@@ -1,42 +1,32 @@
-'use client'
+"use client"
 
-import { createContext, useContext} from 'react'
+import { createContext, useContext } from 'react'
 
 // Core types
-export type TernSecureCtxValue = {
-  _contextKey: Symbol
+export interface TernSecureState {
+  userId: string | null
+  isLoaded: boolean
+  error: Error | null;
+  isSignedIn: boolean
 }
 
-// Context with proper null handling
-const INTERNAL_CONTEXT_KEY = Symbol('TERN_SECURE_CONTEXT')
-const TernSecureContext = createContext<TernSecureCtxValue | null>(null)
+export type TernSecureCtxValue = TernSecureState
+
+
+export const TernSecureCtx = createContext<TernSecureCtxValue | null>(null)
 
 // Set display name for better debugging
-TernSecureContext.displayName = 'TernSecureContext'
+TernSecureCtx.displayName = 'TernSecureCtx'
 
-export const useInternalContext = (hookname: string) => {
-
-  const context = useContext(TernSecureContext)
+export const useTernSecure = (hookName: string) => {
+  const context = useContext(TernSecureCtx)
   
   if (!context) {
     throw new Error(
-      `${hookname} must be used within TernSecureProvider`
+      `${hookName} must be used within TernSecureProvider`
     )
   }
 
   return context
 }
 
-/**
- * Provider component for TernSecure
- * Must be used in client components only
- */
-export function TernSecureCtxProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <TernSecureContext.Provider value={{
-      _contextKey: INTERNAL_CONTEXT_KEY 
-    }}>
-      {children}
-    </TernSecureContext.Provider>
-  )
-}
