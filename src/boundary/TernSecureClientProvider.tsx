@@ -8,29 +8,27 @@ import { TernSecureCtx, TernSecureCtxValue, TernSecureState } from './TernSecure
 
 export function TernSecureClientProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<TernSecureState>({
-    userId: null,
+    user: null,
     isLoaded: false,
     error: null,
-    isSignedIn: false
   })
 
 useEffect(() => {
   const auth = TernSecureAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthState({
           isLoaded: true,
-          isSignedIn: true,
-          userId: user.uid,
+          user: auth.currentUser,
           error: null
         })
       } else {
         setAuthState({
           isLoaded: true,
-          isSignedIn: false,
-          userId: null,
+          user: null,
           error: null
         })
+        auth.signOut()
       }
     })
     

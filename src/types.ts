@@ -48,3 +48,22 @@ export interface ConfigValidationResult {
   errors: string[]
   config: TernSecureConfig
 }
+
+/**
+ * Firebase Admin configuration interface
+ */
+export interface TernSecureAdminConfig {
+  projectId: string
+  clientEmail: string
+  privateKey: string
+}
+
+/**
+ * Firebase Admin configuration validation result
+ */
+export interface AdminConfigValidationResult {
+  isValid: boolean
+  errors: string[]
+  config: TernSecureAdminConfig
+}
+

@@ -4,10 +4,9 @@ export function useAuth() {
   const authState = useTernSecure('useAuth')
 
   return {
-    userId: authState.userId,
+    user: authState.user,
     isLoaded: authState.isLoaded,
-    error: authState.error,
-    isSignedIn: authState.isSignedIn
+    error: authState.error
   }
 }
 

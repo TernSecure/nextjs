@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useState } from 'react'
-import { signInWithEmail } from '../app-router/client/auth'
+import { signInWithEmail } from '../app-router/client/actions'
 import { styles } from '../utils/create-styles'
 import { useRouter } from 'next/navigation'
 
@@ -42,7 +42,7 @@ export function SignIn({
     setLoading(true)
     try {
       const user = await signInWithEmail(email, password)
-      if (user) {
+      if (user.success == true) {
         router.push('/')
       }
     } catch (err) {

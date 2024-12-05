@@ -1,6 +1,6 @@
 {
   "name": "@tern-secure/nextjs",
-  "version": "3.2.12",
+  "version": "3.2.13",
   "packageManager": "npm@10.9.0",
   "publishConfig": {
     "access": "public"
@@ -53,6 +53,11 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
+    },
+    "./server": {
+      "types": "./dist/types/app-router/server/index.d.ts",
+      "import": "./dist/esm/app-router/server/index.js",
+      "require": "./dist/cjs/app-router/server/index.js"
     }
   }
 }

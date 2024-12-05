@@ -1,13 +1,14 @@
 "use client"
 
 import { createContext, useContext } from 'react'
+import { User } from 'firebase/auth'
+
 
 // Core types
 export interface TernSecureState {
-  userId: string | null
+  user: User | null;
   isLoaded: boolean
   error: Error | null;
-  isSignedIn: boolean
 }
 
 export type TernSecureCtxValue = TernSecureState
