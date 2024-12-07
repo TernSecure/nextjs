@@ -1,22 +1,28 @@
 "use client"
 
 import { createContext, useContext } from 'react'
-import { User } from 'firebase/auth'
+import { ternSecureAuth } from '../utils/client-init';
+import { User } from 'firebase/auth';
 
-
-// Core types
-export interface TernSecureState {
-  user: User | null;
-  isLoaded: boolean
-  error: Error | null;
+export const TernSecureUser = (): User | null => {
+  return ternSecureAuth.currentUser;
 }
 
-export type TernSecureCtxValue = TernSecureState
+export interface TernSecureState {
+  userId: string | null
+  isLoaded: boolean
+  error: Error | null
+  isValid: boolean
+  token: string | null
+}
 
+export interface TernSecureCtxValue extends TernSecureState {
+  checkTokenValidity: () => Promise<void>;
+  signOut: () => Promise<void>;
+}
 
 export const TernSecureCtx = createContext<TernSecureCtxValue | null>(null)
 
-// Set display name for better debugging
 TernSecureCtx.displayName = 'TernSecureCtx'
 
 export const useTernSecure = (hookName: string) => {

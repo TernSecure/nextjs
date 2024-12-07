@@ -14,9 +14,10 @@ export async function signInWithEmail(email: string, password: string){
   if(res.success) {
     return { success: true, message: 'Connected.' };
   } else {
-    return { success: false, message: res.message };
+    throw new Error(res.message);
   }
 } catch (error){
-  return { success: false, message: error};
+  const errorMessage = error instanceof Error ? error.message : 'Failed to sign in';
+  throw new Error(errorMessage);
 }
 } 

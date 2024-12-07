@@ -42,7 +42,7 @@ export function SignIn({
     setLoading(true)
     try {
       const user = await signInWithEmail(email, password)
-      if (user.success == true) {
+      if (user.success) {
         router.push('/')
       }
     } catch (err) {

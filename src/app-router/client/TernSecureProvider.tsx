@@ -1,12 +1,6 @@
 import React from "react"
-import dynamic from "next/dynamic"
+import { TernSecureClientProvider } from "../../boundary/TernSecureClientProvider"
 
-const TernSecureClientProvider = dynamic(
-  () => import("../../boundary/TernSecureClientProvider").then(mod => mod.TernSecureClientProvider),
-  { 
-    ssr: false
-   }
-)
 
 // Loading fallback component
 /*function TernSecureLoadingFallback() {

@@ -1,42 +1,41 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { verifySessionCookie } from './sessionTernSecure'
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from './auth';
 
-const signIn = ['/sign-in']
-const signUp = ['/sign-up']
-const publicRoutes = [...signIn, ...signUp]
+export interface TernSecureMiddlewareOptions {
+  publicPaths?: string[];
+  redirectTo?: string;
+}
 
+export function ternSecureMiddleware(options: TernSecureMiddlewareOptions = {}) {
+  const { publicPaths = [], redirectTo = '/login' } = options;
 
-export async function ternSecureMiddleware(req: NextRequest) {
-    const isPublicRoute = publicRoutes.includes(req.nextUrl.pathname)
+  return async function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
 
-    //const token = req.cookies.get('_session_token')?.value
-    const session = req.cookies.get('_session_cookie')?.value
-
-
-  if (isPublicRoute) {
-    return NextResponse.next();
-  }
-
-  if(session) {
-    const {valid, uid} = await verifySessionCookie(session)
-
-    if(!valid) {
-        const response = NextResponse.redirect(new URL(signIn[0], req.url));
-        response.cookies.delete('_session_cookie');
-        return response;
+    // Check if the path is public
+    if (publicPaths.includes(pathname)) {
+      return NextResponse.next();
     }
 
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set('x-uid', uid);
+    try {
+      const { userId, token, error } = await auth();
 
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  }
+      if (error || !userId || !token) {
+        // If there's no valid session, redirect to login
+        return NextResponse.redirect(new URL(redirectTo, request.url));
+      }
 
-  // Allow all other requests (other subdomains)
-  return NextResponse.next()
+      // If there's a valid session, allow the request to proceed
+      const response = NextResponse.next();
+      
+      // Optionally, you can set headers here if needed
+      // response.headers.set('X-User-ID', userId);
+
+      return response;
+    } catch (error) {
+      console.error('Error in ternSecureMiddleware:', error);
+      return NextResponse.redirect(new URL(redirectTo, request.url));
+    }
+  };
 }
+

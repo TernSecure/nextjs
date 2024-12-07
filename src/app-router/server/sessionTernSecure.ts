@@ -3,10 +3,13 @@
 import { cookies } from 'next/headers';
 import { adminTernSecureAuth as adminAuth } from '../../utils/admin-init';
 
+interface FirebaseAuthError extends Error {
+  code?: string;
+}
 
 export interface User {
-    uid: string;
-    email: string;
+    uid: string | null;
+    email: string | null;
   }
 
 export interface Session {
@@ -44,7 +47,7 @@ export async function getServerSessionCookie() {
   }
     
   try {
-    const decondeClaims = await adminAuth.verifySessionCookie(sessionCookie)
+    const decondeClaims = await adminAuth.verifySessionCookie(sessionCookie, true)
     return {
       token: sessionCookie,
       userId: decondeClaims.uid
@@ -87,22 +90,35 @@ export async function setServerSession(token: string) {
     });
   }
 
-  export async function verifyIDToken(token: string){
+  export async function verifyTernIdToken(token: string): Promise<{ valid: boolean; uid?: string; error?: string }> {
     try {
-      const res = await adminAuth.verifyIdToken(token);
-      if (res) {
-        return { valid: true, uid: res.uid };
-      } else {
-        return { valid: false, error: 'Invalid token'};
-      }
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      return { valid: true, uid: decodedToken.uid };
     } catch (error) {
-      return {error: error, valid: false}
+      if (error instanceof Error) {
+        const firebaseError = error as FirebaseAuthError;
+        if (error.name === 'FirebaseAuthError') {
+          // Handle specific Firebase Auth errors
+          switch (firebaseError.code) {
+            case 'auth/id-token-expired':
+              return { valid: false, error: 'Token has expired' };
+            case 'auth/id-token-revoked':
+              return { valid: false, error: 'Token has been revoked' };
+            case 'auth/user-disabled':
+              return { valid: false, error: 'User account has been disabled' };
+            default:
+              return { valid: false, error: 'Invalid token' };
+          }
+        }
+      }
+      return { valid: false, error: 'Error verifying token' };
     }
   }
+  
 
-  export async function verifySessionCookie(session: string): Promise<{ valid: boolean; uid?: any; error?: any }>{
+  export async function verifyTernSessionCookie(session: string): Promise<{ valid: boolean; uid?: any; error?: any }>{
     try {
-      const res = await adminAuth.verifySessionCookie(session);
+      const res = await adminAuth.verifySessionCookie(session, true);
       if (res) {
         return { valid: true, uid: res.uid };
       } else {
