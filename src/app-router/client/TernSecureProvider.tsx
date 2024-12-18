@@ -31,7 +31,7 @@ import { TernSecureClientProvider } from "../../boundary/TernSecureClientProvide
  *   )
  * }
  */
-export function TernSecureProvider({ children }: { children: React.ReactNode }) {
+export async function TernSecureProvider({ children }: { children: React.ReactNode }) {
   return (
     <TernSecureClientProvider>
         {children}

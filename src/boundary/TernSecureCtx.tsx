@@ -13,11 +13,11 @@ export interface TernSecureState {
   isLoaded: boolean
   error: Error | null
   isValid: boolean
-  token: string | null
+  token: any | null
 }
 
 export interface TernSecureCtxValue extends TernSecureState {
-  checkTokenValidity: () => Promise<void>;
+  //checkTokenValidity: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 

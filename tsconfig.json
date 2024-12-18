@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
     "allowJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
@@ -18,5 +22,5 @@
     "target": "es2019"
   },
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],
-  "include": ["src"]
+  "include": ["src", "src/lib", "components/ui"]
 }

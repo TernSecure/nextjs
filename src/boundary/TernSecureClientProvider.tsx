@@ -2,25 +2,24 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { ternSecureAuth } from '../utils/client-init'
-import { User, onAuthStateChanged } from "firebase/auth"
-import { TernSecureCtx, TernSecureState, TernSecureCtxValue } from './TernSecureCtx'
+import { onAuthStateChanged, User } from "firebase/auth"
+import { TernSecureCtx, TernSecureCtxValue, TernSecureState } from './TernSecureCtx'
 import { useRouter } from 'next/navigation'
-import { verifyTernIdToken } from '../app-router/server/sessionTernSecure'
 
 interface TernSecureClientProviderProps {
   children: React.ReactNode;
   onUserChanged?: (user: User | null) => Promise<void>;
   loginPath?: string;
+  loadingComponent?: React.ReactNode;
 }
 
 export function TernSecureClientProvider({ 
   children, 
-  onUserChanged,
-  loginPath = '/sign-in'
+  loginPath = '/sign-in',
+  loadingComponent
 }: TernSecureClientProviderProps) {
   const auth = useMemo(() => ternSecureAuth, []);
   const router = useRouter();
-
   const [authState, setAuthState] = useState<TernSecureState>(() => ({
     userId: null,
     isLoaded: false,
@@ -41,71 +40,53 @@ export function TernSecureClientProvider({
     router.push(loginPath);
   }, [auth, router, loginPath]);
 
-  const checkTokenValidity = useCallback(async (user: User | null) => {
-    if (user) {
-      try {
-        const token = await user.getIdToken(true);
-        const decodedToken = await verifyTernIdToken(token);
-        const isValid = decodedToken.valid
-
-        if(isValid) {
-          return { isValid: true, token, userId: user.uid };
-        }
-      } catch (error) {
-        console.error('Token validation error:', error);
-        await handleSignOut(error instanceof Error ? error : new Error('Authentication token is invalid'));
-        return { isValid: false, token: null, userId: null };
+useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      if (user) {
+        setAuthState({
+          isLoaded: true,
+          userId: user.uid,
+          isValid: true,
+          token: user.getIdToken(),
+          error: null
+        })
+      } else {
+        setAuthState({
+          isLoaded: true,
+          userId: null,
+          isValid: false,
+          token: null,
+          error: new Error('User is not authenticated')
+        })
+        router.push(loginPath);
       }
-    }
-    return { isValid: false, token: null, userId: null };
-  }, [handleSignOut]);
-
-  const handleAuthStateChange = useCallback(async (user: User | null) => {
-    const { isValid, token, userId } = await checkTokenValidity(user);
+    }, (error) => {
+      handleSignOut(error instanceof Error ? error : new Error('Authentication error occurred'));
+    })
     
-    setAuthState({
-      isLoaded: true,
-      userId,
-      isValid,
-      token,
-      error: null
-    });
-
-    if (onUserChanged) {
-      await onUserChanged(user);
-    }
-
-    if (!isValid) {
-      router.push(loginPath);
-    }
-  }, [checkTokenValidity, onUserChanged, router, loginPath]);
-
-  useEffect(() => {
-    const unsubscribeAuthState = onAuthStateChanged(auth, handleAuthStateChange);
-    
-    // Initial check
-    handleAuthStateChange(auth.currentUser);
-
-    // Set up an interval to periodically check token validity
-    const intervalId = setInterval(() => {
-      handleAuthStateChange(auth.currentUser);
-    }, 30000); // Check every 30 seconds
-
-    return () => {
-      unsubscribeAuthState();
-      clearInterval(intervalId);
-    };
-  }, [auth, handleAuthStateChange]);
+    return () => unsubscribe()
+  }, [auth, handleSignOut, router, loginPath])
 
   const contextValue: TernSecureCtxValue = useMemo(() => ({
     ...authState,
-    checkTokenValidity: () => handleAuthStateChange(auth.currentUser),
     signOut: handleSignOut,
-  }), [authState, handleAuthStateChange, auth, handleSignOut]);
+  }), [authState, auth, handleSignOut]);
+
+  if (!authState.isLoaded) {
+    return (
+      <TernSecureCtx.Provider value={contextValue}>
+        {loadingComponent || (
+          <div aria-live="polite" aria-busy="true">
+            <span className="sr-only">Loading authentication state...</span>
+          </div>
+        )}
+      </TernSecureCtx.Provider>
+    );
+  }
 
   return (
-    <TernSecureCtx.Provider value={contextValue}>
-      {children}
-    </TernSecureCtx.Provider>
-  );
+      <TernSecureCtx.Provider value={contextValue}>
+       {children}
+      </TernSecureCtx.Provider>
+  )
 }

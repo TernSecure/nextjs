@@ -92,7 +92,7 @@ export async function setServerSession(token: string) {
 
   export async function verifyTernIdToken(token: string): Promise<{ valid: boolean; uid?: string; error?: string }> {
     try {
-      const decodedToken = await adminAuth.verifyIdToken(token);
+      const decodedToken = await adminAuth.verifyIdToken(token, true);
       return { valid: true, uid: decodedToken.uid };
     } catch (error) {
       if (error instanceof Error) {
