@@ -1,6 +1,6 @@
 {
   "name": "@tern-secure/nextjs",
-  "version": "3.2.43",
+  "version": "0.0.0",
   "packageManager": "npm@10.9.0",
   "publishConfig": {
     "access": "public"
@@ -18,6 +18,9 @@
     "build": "npm run clean && tsup && tsc -p tsconfig.add.json",
     "dev": "tsup --watch",
     "lint": "eslint src/",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "keywords": [],
@@ -25,6 +28,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@changesets/cli": "^2.27.11",
     "@eslint/js": "^9.15.0",
     "@types/node": "^22.9.3",
     "@types/react": "^18.3.12",
