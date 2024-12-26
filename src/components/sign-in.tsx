@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { signInWithEmail, signInWithRedirectGoogle, signInWithMicrosoft } from '../app-router/client/actions'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
@@ -11,9 +11,22 @@ import { Alert, AlertDescription } from "./ui/alert"
 import { Separator } from "./ui/separator"
 import { cn } from "../lib/utils"
 import { Loader2 } from 'lucide-react'
+import { getRedirectResult } from 'firebase/auth'
+import { ternSecureAuth } from '../utils/client-init'
+import { createSessionCookie } from '../app-router/server/sessionTernSecure'
+import { AuthBackground } from './background'
+import { getValidRedirectUrl } from '../utils/construct'
+
+const isLocalhost = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+
 
 export interface SignInProps {
+  redirectUrl?: string
   onError?: (error: Error) => void
+  onSuccess?: () => void
   className?: string
   customStyles?: {
     card?: string
@@ -27,17 +40,82 @@ export interface SignInProps {
   }
 }
 
-export function SignIn({ 
-  onError, 
+export function SignIn({
+  redirectUrl,
+  onError,
+  onSuccess,
   className,
   customStyles = {}
 }: SignInProps) {
   const [loading, setLoading] = useState(false)
+  const [checkingRedirect, setCheckingRedirect] = useState(true)
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const router = useRouter()
+  const searchParams = useSearchParams()
+  const isRedirectSignIn = searchParams.get('signInRedirect') === 'true'
 
+
+  const handleRedirectResult = useCallback(async () => {
+    if (!isRedirectSignIn) return false
+    setCheckingRedirect(true)
+    try {
+      console.log('Checking redirect result...');
+      console.log('Current hostname:', window.location.hostname);
+      console.log('Auth domain hostname:', authDomain);
+
+    const isOnAuth = authDomain && 
+    window.location.hostname === authDomain.replace(/https?:\/\//, '');
+    console.log('Is on  AuthDomain:', isOnAuth);
+
+
+      const result = await getRedirectResult(ternSecureAuth)
+      console.log('Redirect result:', result);
+      if (result) {
+        const idToken = await result.user.getIdToken()
+        const sessionResult = await createSessionCookie(idToken)
+        if (!sessionResult.success) {
+          throw new Error('Failed to create session')
+        }
+        const storedRedirectUrl = sessionStorage.getItem('auth_return_url')
+        sessionStorage.removeItem('auth_redirect_url') 
+        onSuccess?.()
+        window.location.href = storedRedirectUrl || getValidRedirectUrl(redirectUrl, searchParams)
+        return true
+      }
+      setCheckingRedirect(false)
+    } catch (err) {
+      console.error('Redirect result error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
+      setError(errorMessage)
+      onError?.(err instanceof Error ? err : new Error(errorMessage))
+      sessionStorage.removeItem('auth_redirect_url')
+      return false
+    }
+  }, [isRedirectSignIn, redirectUrl, searchParams, onSuccess, onError])
+
+ //const REDIRECT_TIMEOUT = 5000;
+
+  useEffect(() => {
+    //let timeoutId: NodeJS.Timeout;
+
+    if (isRedirectSignIn) {
+      handleRedirectResult();
+
+      /*timeoutId = setTimeout(() => {
+        console.warn('Redirect check timed out');
+      setCheckingRedirect(false);
+      setError('Sign in took too long. Please try again.');
+        
+    }, REDIRECT_TIMEOUT);
+    }
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }*/
+    };
+  }, [handleRedirectResult, isRedirectSignIn])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,7 +123,8 @@ export function SignIn({
     try {
       const user = await signInWithEmail(email, password)
       if (user.success) {
-        router.push('/')
+        onSuccess?.()
+        window.location.href = getValidRedirectUrl(redirectUrl, searchParams)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in'
@@ -59,27 +138,46 @@ export function SignIn({
   const handleSocialSignIn = async (provider: 'google' | 'microsoft') => {
     setLoading(true)
     try {
+
+      const validRedirectUrl = getValidRedirectUrl(redirectUrl, searchParams)
+      sessionStorage.setItem('auth_redirect_url', validRedirectUrl)
+
+      const currentUrl = new URL(window.location.href)
+      currentUrl.searchParams.set('signInRedirect', 'true')
+      window.history.replaceState({}, '', currentUrl.toString())
+
       const result = provider === 'google' ? await signInWithRedirectGoogle() : await signInWithMicrosoft()
-      if (result.success) {
-        console.log(result.message)
-      } else {
+      if (!result.success) {
         throw new Error(result.error)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : `Failed to sign in with ${provider}`
       setError(errorMessage)
       onError?.(err instanceof Error ? err : new Error(`Failed to sign in with ${provider}`))
-    } finally {
       setLoading(false)
+      sessionStorage.removeItem('auth_redirect_url')
     }
   }
 
+  if (checkingRedirect && isRedirectSignIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          
+        </div>
+      </div>
+    )
+  }
+
   return (
+    <div className="relative flex items-center justify-center">
+      <AuthBackground />
     <Card className={cn("w-full max-w-md mx-auto mt-8", className, customStyles.card)}>
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className={cn("font-bold", customStyles.title)}>Sign in to your account</CardTitle>
+        <CardTitle className={cn("font-bold", customStyles.title)}>Sign in to TernSecure</CardTitle>
         <CardDescription className={cn("text-muted-foreground", customStyles.description)}>
-          Enter your email below to create your account
+          Please sign in to continue
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -165,13 +263,14 @@ export function SignIn({
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
           <a href="#" className="text-primary hover:underline">
             Sign up
           </a>
         </p>
       </CardFooter>
     </Card>
+    </div>
   )
 }
 
