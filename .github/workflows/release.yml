@@ -17,13 +17,13 @@ jobs:
       statuses: write
     steps:
       - name: Checkout
-        uses: TernSecure/checkout@main
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Setup Node.js
-        uses: TernSecure/setup-node@main
+        uses: actions/setup-node@v3
         with:
           node-version: 'lts/*'
           registry-url: 'https://registry.npmjs.org'
@@ -33,7 +33,7 @@ jobs:
         
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: TernSecure/changesets-action@main
+        uses: changesets/action@v1
         with:
           publish: npm run release
           commit: "chore: version packages"
