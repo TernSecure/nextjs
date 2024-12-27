@@ -94,7 +94,7 @@ export function SignIn({
     }
   }, [isRedirectSignIn, redirectUrl, searchParams, onSuccess, onError])
 
- //const REDIRECT_TIMEOUT = 5000;
+ ///const REDIRECT_TIMEOUT = 5000;
 
   useEffect(() => {
     //let timeoutId: NodeJS.Timeout;
