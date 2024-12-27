@@ -37,7 +37,7 @@ export async function auth(): Promise<AuthResult> {
       }
     }
 
-    // If both checks fail, return null values
+    /// If both checks fail, return null values
     return {
       userId: null,
       token: null,
