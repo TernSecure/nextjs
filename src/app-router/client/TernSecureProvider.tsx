@@ -16,7 +16,7 @@ import { TernSecureClientProvider } from "../../boundary/TernSecureClientProvide
  * Automatically handles client/server boundary and authentication state
  * 
  * @example
- * // app/layout.tsx
+ * /// app/layout.tsx
  * import { TernSecureProvider } from '@tern/secure'
  * 
  * export default function RootLayout({ children }) {
