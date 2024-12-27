@@ -1,6 +1,6 @@
 {
   "name": "@tern-secure/nextjs",
-  "version": "3.3.0",
+  "version": "3.2.42",
   "packageManager": "npm@10.9.0",
   "publishConfig": {
     "access": "public",
@@ -13,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/TernSecure/nextjs/issues"
   },
-  "homepage": "https://github.com/tern-secure/nextjs#readme",
+  "homepage": "https://github.com/TernSecure/nextjs#readme",
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsup && tsc -p tsconfig.add.json",
