@@ -1,5 +1,15 @@
 # @tern-secure/nextjs
 
+## 3.3.1
+
+### Patch Changes
+
+- ba72742: chore: enhance release workflow with NPM authentication
+
+  - Add NPM authentication step to the GitHub Actions workflow for secure publishing.
+  - Update the publish command to use 'npm publish --access public' instead of 'npm run release'.
+  - Improve clarity and organization of the release process.
+
 ## 3.3.0
 
 ### Minor Changes
