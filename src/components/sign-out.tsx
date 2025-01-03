@@ -29,8 +29,7 @@ export function SignOut({
     try {
       // Sign out from Firebase
       await signOut(ternSecureAuth)
-      
-      // Clear the session cookie
+    
       await clearSessionCookie()
       
       // Call success callback if provided
