@@ -21,7 +21,7 @@ const isLocalhost = typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
-const appName = process.env.NEXT_PUBLIC_APP_NAME || 'TernSecure';
+const appName = process.env.NEXT_PUBLIC_FIREBASE_APP_NAME || 'TernSecure';
 
 
 export interface SignInProps {
