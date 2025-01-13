@@ -21,6 +21,7 @@ const isLocalhost = typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+const appName = process.env.NEXT_PUBLIC_APP_NAME || 'TernSecure';
 
 
 export interface SignInProps {
@@ -175,7 +176,7 @@ export function SignIn({
       <AuthBackground />
     <Card className={cn("w-full max-w-md mx-auto mt-8", className, customStyles.card)}>
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className={cn("font-bold", customStyles.title)}>Sign in to TernSecure</CardTitle>
+        <CardTitle className={cn("font-bold", customStyles.title)}>Sign in to {`${appName}`}</CardTitle>
         <CardDescription className={cn("text-muted-foreground", customStyles.description)}>
           Please sign in to continue
         </CardDescription>
