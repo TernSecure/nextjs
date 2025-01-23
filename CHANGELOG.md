@@ -1,5 +1,15 @@
 # @tern-secure/nextjs
 
+## 3.3.3
+
+### Patch Changes
+
+- a1fa601: fix: remove auth token and update sign-in signup link
+
+  - Remove hardcoded NPM registry authentication token from .npmrc
+  - Delete unused TypeScript declaration file in dist/types
+  - Update sign-in component to link to signup page with '/signup' href
+
 ## 3.3.1
 
 ### Patch Changes
