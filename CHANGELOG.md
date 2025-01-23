@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 3.3.4
+
+### Patch Changes
+
+- a2c2a6c: chore: configure npm authentication for private registry
+
 ## 3.3.3
 
 ### Patch Changes
