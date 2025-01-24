@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 3.3.5
+
+### Patch Changes
+
+- b6942c4: chore: add verbose logging to npm publish in release workflow
+
 ## 3.3.4
 
 ### Patch Changes
