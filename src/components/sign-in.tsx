@@ -17,8 +17,6 @@ import { createSessionCookie } from '../app-router/server/sessionTernSecure'
 import { AuthBackground } from './background'
 import { getValidRedirectUrl } from '../utils/construct'
 
-const isLocalhost = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 const appName = process.env.NEXT_PUBLIC_FIREBASE_APP_NAME || 'TernSecure';
@@ -225,9 +223,11 @@ export function SignIn({
           </Button>
         </form>
         <div className="relative">
+           <div className="absolute inset-0 flex items-center">
           <Separator className={cn(customStyles.separator)} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="bg-background px-2 text-muted-foreground text-sm">Or continue with</span>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -265,7 +265,7 @@ export function SignIn({
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
-          <a href="/signup" className="text-primary hover:underline">
+          <a href="/sign-up" className="text-primary hover:underline">
             Sign up
           </a>
         </p>

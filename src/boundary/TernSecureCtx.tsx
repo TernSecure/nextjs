@@ -14,11 +14,12 @@ export interface TernSecureState {
   error: Error | null
   isValid: boolean
   token: any | null
+  email: string | null
 }
 
 export interface TernSecureCtxValue extends TernSecureState {
-  //checkTokenValidity: () => Promise<void>;
-  signOut: () => Promise<void>;
+ signOut: () => Promise<void>
+ setEmail: (email: string) => void
 }
 
 export const TernSecureCtx = createContext<TernSecureCtxValue | null>(null)

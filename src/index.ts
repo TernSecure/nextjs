@@ -11,6 +11,7 @@ export { useAuth } from './boundary/hooks/useAuth'
 export { useUser } from './boundary/hooks/useUser'
 export { SignIn } from './components/sign-in'
 export { SignOut } from './components/sign-out'
+export { SignUp } from './components/sign-up'
 
 //export const TernSecureProvider = TernSecureServerProvider
 //export type { TernSecureState }

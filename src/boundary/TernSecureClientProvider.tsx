@@ -25,7 +25,8 @@ export function TernSecureClientProvider({
     isLoaded: false,
     error: null,
     isValid: false,
-    token: null
+    token: null,
+    email: null
   }));
 
   const handleSignOut = useCallback(async (error?: Error) => {
@@ -35,10 +36,18 @@ export function TernSecureClientProvider({
       userId: null,
       error: error || null,
       isValid: false,
-      token: null
+      token: null,
+      email: null
     });
     router.push(loginPath);
   }, [auth, router, loginPath]);
+
+  const setEmail = useCallback((email: string) => {
+    setAuthState((prev) => ({
+      ...prev,
+      email,
+    }))
+  }, [])
 
 useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
@@ -48,7 +57,8 @@ useEffect(() => {
           userId: user.uid,
           isValid: true,
           token: user.getIdToken(),
-          error: null
+          error: null,
+          email: user.email,
         })
       } else {
         setAuthState({
@@ -56,9 +66,12 @@ useEffect(() => {
           userId: null,
           isValid: false,
           token: null,
-          error: new Error('User is not authenticated')
+          error: new Error('User is not authenticated'),
+          email: null
         })
-        router.push(loginPath);
+        if (!window.location.pathname.includes("/sign-up")) {
+          router.push(loginPath)
+        }
       }
     }, (error) => {
       handleSignOut(error instanceof Error ? error : new Error('Authentication error occurred'));
@@ -70,7 +83,8 @@ useEffect(() => {
   const contextValue: TernSecureCtxValue = useMemo(() => ({
     ...authState,
     signOut: handleSignOut,
-  }), [authState, auth, handleSignOut]);
+    setEmail
+  }), [authState, auth, handleSignOut, setEmail]);
 
   if (!authState.isLoaded) {
     return (
