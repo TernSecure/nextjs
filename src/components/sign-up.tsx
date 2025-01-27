@@ -41,7 +41,6 @@ export function SignUp({
 
   const { setEmail: setContextEmail } = useSignUp()
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
     confirmPassword: "",
