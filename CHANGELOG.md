@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 3.4.2
+
+### Patch Changes
+
+- f4ddaa3: chore: remove name field from sign-up form state
+
 ## 3.4.1
 
 ### Patch Changes
