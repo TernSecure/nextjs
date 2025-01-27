@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 3.4.1
+
+### Patch Changes
+
+- 9ad43a8: chore: add build step to release workflow
+
 ## 3.4.0
 
 ### Minor Changes
