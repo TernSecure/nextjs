@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 3.4.3
+
+### Patch Changes
+
+- 686fb5c: chore: improve password input styling and interaction
+
 ## 3.4.2
 
 ### Patch Changes
