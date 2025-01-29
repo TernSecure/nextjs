@@ -3,18 +3,10 @@
 import { createContext, useContext } from 'react'
 import { ternSecureAuth } from '../utils/client-init';
 import { User } from 'firebase/auth';
+import { type TernSecureState } from '../types';
 
 export const TernSecureUser = (): User | null => {
   return ternSecureAuth.currentUser;
-}
-
-export interface TernSecureState {
-  userId: string | null
-  isLoaded: boolean
-  error: Error | null
-  isValid: boolean
-  token: any | null
-  email: string | null
 }
 
 export interface TernSecureCtxValue extends TernSecureState {

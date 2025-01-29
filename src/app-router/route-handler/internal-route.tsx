@@ -2,8 +2,12 @@ import { Verify } from "../../components/verify"
 
 // Internal route mapping
 export const internalRoutes = {
-  verify: {
+  signUpVerify: {
     pattern: /^\/sign-up\/verify$/,
+    component: Verify,
+  },
+  signInVerify: {
+    pattern: /^\/sign-in\/verify$/,
     component: Verify,
   },
 }

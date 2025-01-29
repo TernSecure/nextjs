@@ -22,7 +22,7 @@ export interface SignUpProps {
     onSuccess?: () => void
 }
 
-interface PasswordRequirement {
+export interface PasswordRequirement {
   text: string
   satisfied: boolean
 }

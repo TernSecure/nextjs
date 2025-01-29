@@ -1,6 +1,13 @@
 import { TernSecureAuth } from '../../utils/client-init'
 import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, OAuthProvider, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
-import { createSessionCookie } from '../server/sessionTernSecure'
+import { ERRORS } from '../../errors'
+
+export interface SignInResponse {
+  success: boolean;
+  message?: string;
+  error?: typeof ERRORS[keyof typeof ERRORS];
+  user?: any;
+}
 
 export async function createUser(email: string, password: string) {
   const auth = TernSecureAuth()
@@ -42,19 +49,18 @@ export async function createUser(email: string, password: string) {
 }
 
 
-export async function signInWithEmail(email: string, password: string){
+export async function signInWithEmail(email: string, password: string): Promise<SignInResponse> {
   const auth = TernSecureAuth()
   try {
   const UserCredential = await signInWithEmailAndPassword(auth, email, password)
-  const idToken = await UserCredential.user.getIdToken();
-
-  const res = await createSessionCookie(idToken);
-
-  if(res.success) {
-    return { success: true, message: 'Connected.' };
-  } else {
-    throw new Error(res.message);
-  }
+  const user = UserCredential.user
+  return { 
+      success: true, 
+      message: 'Authentication successful',
+      user: UserCredential.user,
+      error: !user.emailVerified ? ERRORS.REQUIRES_VERIFICATION : undefined
+    };
+  
 } catch (error){
   const errorMessage = error instanceof Error ? error.message : 'Failed to sign in';
   throw new Error(errorMessage);

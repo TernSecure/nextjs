@@ -3,41 +3,47 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
+import { Button, type ButtonProps } from './ui/button'
 import { ternSecureAuth } from '../utils/client-init'
 import { clearSessionCookie } from '../app-router/server/sessionTernSecure'
 import { cn } from '../lib/utils'
-import Link from 'next/link'
 
-interface SignOutLinkProps {
+type SignOutCustomProps = {
   children?: React.ReactNode
   onError?: (error: Error) => void
   onSignOutSuccess?: () => void
   className?: string
-  activeClassName?: string
-  disabled?: boolean
+  variant?: ButtonProps['variant']
+  size?: ButtonProps['size']
 }
 
-export function SignOut({
-  children = 'Sign out',
+type SignOutProps = Omit<ButtonProps, 'onClick'> & SignOutCustomProps
+
+export function SignOutButton({ 
+  children = 'Sign out', 
   onError,
   onSignOutSuccess,
   className,
-  activeClassName,
-  disabled = false,
-}: SignOutLinkProps) {
+  variant = 'outline',
+  size = 'default',
+  ...buttonProps 
+}: SignOutProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSignOut = async (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    if (disabled || isLoading) return
-
+  const handleSignOut = async () => {
     setIsLoading(true)
     try {
+      // Sign out from Firebase
       await signOut(ternSecureAuth)
+    
       await clearSessionCookie()
+      
+      // Call success callback if provided
       onSignOutSuccess?.()
-      router.push('/sign-in')
+      
+      // Redirect to sign-in page
+      router.push('/sign-in') //todo: singout and include a redirect URl
     } catch (error) {
       console.error('Sign out error:', error)
       onError?.(error instanceof Error ? error : new Error('Failed to sign out'))
@@ -47,19 +53,16 @@ export function SignOut({
   }
 
   return (
-    <Link
-      href="#"
+    <Button
+      variant={variant}
+      size={size}
       onClick={handleSignOut}
-      className={cn(
-        'text-sm font-medium transition-colors hover:text-primary',
-        disabled && 'pointer-events-none opacity-50',
-        isLoading && 'pointer-events-none',
-        className,
-        isLoading && activeClassName
-      )}
-      aria-disabled={disabled || isLoading}
+      disabled={isLoading}
+      className={cn("", className)}
+      {...buttonProps}
     >
       {isLoading ? 'Signing out...' : children}
-    </Link>
+    </Button>
   )
 }
+

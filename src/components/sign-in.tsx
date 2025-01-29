@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useCallback, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { signInWithEmail, signInWithRedirectGoogle, signInWithMicrosoft } from '../app-router/client/actions'
+import { useSearchParams, useRouter, usePathname} from 'next/navigation'
+import { signInWithEmail, signInWithRedirectGoogle, signInWithMicrosoft, type SignInResponse } from '../app-router/client/actions'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -16,6 +16,8 @@ import { ternSecureAuth } from '../utils/client-init'
 import { createSessionCookie } from '../app-router/server/sessionTernSecure'
 import { AuthBackground } from './background'
 import { getValidRedirectUrl } from '../utils/construct'
+import  { ERRORS } from '../errors'
+import { handleInternalRoute } from '../app-router/route-handler/internal-route'
 
 
 const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
@@ -26,6 +28,7 @@ export interface SignInProps {
   redirectUrl?: string
   onError?: (error: Error) => void
   onSuccess?: () => void
+  requiresVerification?: boolean
   className?: string
   customStyles?: {
     card?: string
@@ -43,6 +46,7 @@ export function SignIn({
   redirectUrl,
   onError,
   onSuccess,
+  requiresVerification = true,
   className,
   customStyles = {}
 }: SignInProps) {
@@ -51,8 +55,16 @@ export function SignIn({
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [authResponse, setAuthResponse] = useState<SignInResponse | null>(null)
   const searchParams = useSearchParams()
   const isRedirectSignIn = searchParams.get('signInRedirect') === 'true'
+  const router = useRouter()
+  const pathname = usePathname()
+  const InternalComponent = handleInternalRoute(pathname)
+
+  if (InternalComponent) {
+    return <InternalComponent />
+  }
 
 
   const handleRedirectResult = useCallback(async () => {
@@ -119,11 +131,33 @@ export function SignIn({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setAuthResponse(null)
     try {
-      const user = await signInWithEmail(email, password)
-      if (user.success) {
-        onSuccess?.()
-        window.location.href = getValidRedirectUrl(redirectUrl, searchParams)
+      const response = await signInWithEmail(email, password)
+      setAuthResponse(response)
+
+   //   if (response.error === ERRORS.REQUIRES_VERIFICATION) {
+    //    if (requiresVerification) {
+   //       setError(response.message || 'Email verification required')
+   //       return
+   //   }
+  //  }
+
+      if (response.user) {
+        if (requiresVerification && !response.user.emailVerified) {
+          setError('Email verification required')
+          return
+        }
+
+        const idToken = await response.user.getIdToken()
+        const sessionResult = await createSessionCookie(idToken)
+
+        if(!sessionResult.success) {
+          throw new Error(sessionResult.message || 'Failed to create session')
+        }
+
+      onSuccess?.()
+      window.location.href = getValidRedirectUrl(redirectUrl, searchParams)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in'
@@ -182,8 +216,19 @@ export function SignIn({
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant={authResponse?.error === ERRORS.REQUIRES_VERIFICATION ? "destructive" : "destructive"}>
+              <AlertDescription>
+              <span>{error}</span>
+              {authResponse?.error === ERRORS.REQUIRES_VERIFICATION && (
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto font-normal text-sm hover:underline"
+                      onClick={() => router.push(`/sign-in/verify`)}
+                    >
+                      Request new verification email →
+                    </Button>
+                  )}
+                </AlertDescription>
             </Alert>
           )}
           <div className="space-y-2">

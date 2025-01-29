@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { ternSecureAuth } from '../utils/client-init'
 import { onAuthStateChanged, User } from "firebase/auth"
-import { TernSecureCtx, TernSecureCtxValue, TernSecureState } from './TernSecureCtx'
+import { TernSecureCtx, TernSecureCtxValue } from './TernSecureCtx'
+import { type TernSecureState } from '../types'
 import { useRouter } from 'next/navigation'
 
 interface TernSecureClientProviderProps {
@@ -25,8 +26,10 @@ export function TernSecureClientProvider({
     isLoaded: false,
     error: null,
     isValid: false,
+    isVerified: false,
+    isAuthenticated: false,
     token: null,
-    email: null
+    email: null,
   }));
 
   const handleSignOut = useCallback(async (error?: Error) => {
@@ -37,7 +40,9 @@ export function TernSecureClientProvider({
       error: error || null,
       isValid: false,
       token: null,
-      email: null
+      email: null,
+      isVerified: false,
+      isAuthenticated: false,
     });
     router.push(loginPath);
   }, [auth, router, loginPath]);
@@ -52,10 +57,14 @@ export function TernSecureClientProvider({
 useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
+        const isValid = !!user.uid;
+        const isVerified = user.emailVerified;
         setAuthState({
           isLoaded: true,
           userId: user.uid,
-          isValid: true,
+          isValid,
+          isVerified,
+          isAuthenticated: isValid && isVerified,
           token: user.getIdToken(),
           error: null,
           email: user.email,
@@ -65,9 +74,11 @@ useEffect(() => {
           isLoaded: true,
           userId: null,
           isValid: false,
+          isVerified: false,
+          isAuthenticated: false,
           token: null,
           error: new Error('User is not authenticated'),
-          email: null
+          email: null,
         })
         if (!window.location.pathname.includes("/sign-up")) {
           router.push(loginPath)

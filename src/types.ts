@@ -1,5 +1,6 @@
 import { FirebaseOptions } from 'firebase/app'
 
+
 /**
  * TernSecure Firebase configuration interface
  * Extends Firebase's base configuration options
@@ -65,5 +66,17 @@ export interface AdminConfigValidationResult {
   isValid: boolean
   errors: string[]
   config: TernSecureAdminConfig
+}
+
+
+export interface TernSecureState {
+  userId: string | null
+  isLoaded: boolean
+  error: Error | null
+  isValid: boolean
+  isVerified: boolean
+  isAuthenticated: boolean
+  token: any | null
+  email: string | null
 }
 
