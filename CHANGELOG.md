@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 4.0.0
+
+### Major Changes
+
+- 403fc4d: feat: Add email verification and sign-out button, enhance authentication flow
+
 ## 3.4.3
 
 ### Patch Changes
