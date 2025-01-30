@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname} from 'next/navigation'
-import { signInWithEmail, signInWithRedirectGoogle, signInWithMicrosoft, type SignInResponse } from '../app-router/client/actions'
+import { signInWithEmail, signInWithRedirectGoogle, signInWithMicrosoft } from '../app-router/client/actions'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -16,8 +16,10 @@ import { ternSecureAuth } from '../utils/client-init'
 import { createSessionCookie } from '../app-router/server/sessionTernSecure'
 import { AuthBackground } from './background'
 import { getValidRedirectUrl } from '../utils/construct'
-import  { ERRORS } from '../errors'
 import { handleInternalRoute } from '../app-router/route-handler/internal-route'
+import type { SignInResponse, AuthError } from '../types'
+import { useAuth } from '../boundary/hooks/useAuth'
+
 
 
 const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
@@ -28,7 +30,6 @@ export interface SignInProps {
   redirectUrl?: string
   onError?: (error: Error) => void
   onSuccess?: () => void
-  requiresVerification?: boolean
   className?: string
   customStyles?: {
     card?: string
@@ -46,7 +47,6 @@ export function SignIn({
   redirectUrl,
   onError,
   onSuccess,
-  requiresVerification = true,
   className,
   customStyles = {}
 }: SignInProps) {
@@ -61,6 +61,12 @@ export function SignIn({
   const router = useRouter()
   const pathname = usePathname()
   const InternalComponent = handleInternalRoute(pathname)
+  const { requiresVerification } = useAuth()
+
+  const redirectParam = searchParams.get("redirect")
+  const validRedirectUrl = getValidRedirectUrl(redirectUrl, searchParams)
+
+
 
   if (InternalComponent) {
     return <InternalComponent />
@@ -157,7 +163,8 @@ export function SignIn({
         }
 
       onSuccess?.()
-      window.location.href = getValidRedirectUrl(redirectUrl, searchParams)
+      //window.location.href = getValidRedirectUrl(redirectUrl, searchParams)
+      router.push(validRedirectUrl)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in'
@@ -215,11 +222,11 @@ export function SignIn({
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <Alert variant={authResponse?.error === ERRORS.REQUIRES_VERIFICATION ? "destructive" : "destructive"}>
+          {(error || authResponse?.message) && (
+            <Alert variant={authResponse?.error === 'REQUIRES_VERIFICATION'? "destructive" : "destructive"}>
               <AlertDescription>
-              <span>{error}</span>
-              {authResponse?.error === ERRORS.REQUIRES_VERIFICATION && (
+              <span>{error || authResponse?.message}</span>
+              {authResponse?.error === 'REQUIRES_VERIFICATION' && (
                     <Button
                       variant="link"
                       className="p-0 h-auto font-normal text-sm hover:underline"

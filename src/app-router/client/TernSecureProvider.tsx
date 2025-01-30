@@ -2,6 +2,20 @@ import React from "react"
 import { TernSecureClientProvider } from "../../boundary/TernSecureClientProvider"
 
 
+/**
+ * Configuration options for TernSecure authentication
+ */
+export interface TernSecureConfig {
+  /** Whether email verification is required (defaults to true) */
+  requiresVerification?: boolean
+  /** Custom path for login page (defaults to /sign-in) */
+  loginPath?: string
+  /** Custom path for signup page (defaults to /sign-up) */
+  signUpPath?: string
+  /** Custom loading component */
+  loadingComponent?: React.ReactNode
+}
+
 // Loading fallback component
 /*function TernSecureLoadingFallback() {
   return (
@@ -31,9 +45,20 @@ import { TernSecureClientProvider } from "../../boundary/TernSecureClientProvide
  *   )
  * }
  */
-export async function TernSecureProvider({ children }: { children: React.ReactNode }) {
+export async function TernSecureProvider({ 
+  children,
+  requiresVerification = true,
+  loginPath,
+  signUpPath,
+  loadingComponent,
+ }: React.PropsWithChildren<TernSecureConfig>) {
   return (
-    <TernSecureClientProvider>
+    <TernSecureClientProvider
+      requiresVerification={requiresVerification}
+      loginPath={loginPath}
+      signUpPath={signUpPath}
+      loadingComponent={loadingComponent}
+    >
         {children}
     </TernSecureClientProvider>
   )

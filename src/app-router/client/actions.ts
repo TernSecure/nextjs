@@ -1,13 +1,9 @@
 import { TernSecureAuth } from '../../utils/client-init'
 import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, OAuthProvider, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
 import { ERRORS } from '../../errors'
+import { type SignInResponse } from '../../types'
 
-export interface SignInResponse {
-  success: boolean;
-  message?: string;
-  error?: typeof ERRORS[keyof typeof ERRORS];
-  user?: any;
-}
+
 
 export async function createUser(email: string, password: string) {
   const auth = TernSecureAuth()
@@ -58,7 +54,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
       success: true, 
       message: 'Authentication successful',
       user: UserCredential.user,
-      error: !user.emailVerified ? ERRORS.REQUIRES_VERIFICATION : undefined
+      error: !user.emailVerified ? 'REQUIRES_VERIFICATION' : undefined
     };
   
 } catch (error){

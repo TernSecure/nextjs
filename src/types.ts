@@ -1,4 +1,5 @@
 import { FirebaseOptions } from 'firebase/app'
+import { ERRORS } from './errors'
 
 
 /**
@@ -69,6 +70,24 @@ export interface AdminConfigValidationResult {
 }
 
 
+export interface SignInResponse {
+  success: boolean;
+  message?: string;
+  error?: keyof typeof ERRORS | undefined; 
+  user?: any;
+}
+
+export interface AuthError extends Error {
+  code?: string
+  message: string
+  response?: SignInResponse
+}
+
+export function isSignInResponse(value: any): value is SignInResponse {
+  return typeof value === "object" && "success" in value && typeof value.success === "boolean"
+}
+
+
 export interface TernSecureState {
   userId: string | null
   isLoaded: boolean
@@ -78,5 +97,7 @@ export interface TernSecureState {
   isAuthenticated: boolean
   token: any | null
   email: string | null
+  status: "loading" | "authenticated" | "unauthenticated" | "unverified"
+  requiresVerification: boolean
 }
 
