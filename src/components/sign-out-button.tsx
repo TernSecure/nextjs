@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
 import { Button, type ButtonProps } from './ui/button'
 import { ternSecureAuth } from '../utils/client-init'
 import { clearSessionCookie } from '../app-router/server/sessionTernSecure'
 import { cn } from '../lib/utils'
+import { constructUrlWithRedirect } from '../utils/construct'
+
 
 type SignOutCustomProps = {
   children?: React.ReactNode
@@ -31,6 +33,7 @@ export function SignOutButton({
   ...buttonProps 
 }: SignOutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const loginPath = process.env.NEXT_PUBLIC_LOGIN_PATH || '/sign-in'
 
@@ -45,24 +48,14 @@ export function SignOutButton({
       // Call success callback if provided
       onSignOutSuccess?.()
 
-      // Build the login URL with redirect
-      const redirectUrl = redirectPath || pathname
+      // Construct login URL with redirect parameter
+      const loginUrl = constructUrlWithRedirect(loginPath, pathname)
 
-      // Ensure we're not redirecting to the login page itself
-      if (redirectUrl && !redirectUrl.startsWith(loginPath)) {
-        // Use URLSearchParams to properly encode the parameters
-        const searchParams = new URLSearchParams({
-          redirect_url: redirectUrl
-        }).toString()
-        
-        // Construct the full URL with encoded parameters
-        const fullLoginPath = `${loginPath}?${searchParams}`
-        
-        // Use window.location for a full page navigation that preserves the query parameters
-        window.location.href = fullLoginPath
+      // Use router for development and window.location for production
+      if (process.env.NODE_ENV === "production") {
+        window.location.href = loginUrl
       } else {
-        // If no redirect or redirecting to login, just go to login
-        window.location.href = loginPath
+        router.push(loginUrl)
       }
     } catch (error) {
       console.error('Sign out error:', error)

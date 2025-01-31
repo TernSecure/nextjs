@@ -1,11 +1,19 @@
 import { TernSecureAuth } from '../../utils/client-init'
-import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, OAuthProvider, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
-import { ERRORS } from '../../errors'
-import { type SignInResponse } from '../../types'
+import { 
+  signInWithEmailAndPassword, 
+  signInWithRedirect, 
+  getRedirectResult, 
+  GoogleAuthProvider, 
+  OAuthProvider, 
+  createUserWithEmailAndPassword, 
+  sendEmailVerification } from 'firebase/auth'
+import type { SignInResponse } from '../../types'
+import { handleFirebaseAuthError } from '../../errors'
 
 
 
-export async function createUser(email: string, password: string) {
+
+export async function createUser(email: string, password: string): Promise<SignInResponse> {
   const auth = TernSecureAuth()
   try {
     
@@ -18,29 +26,20 @@ export async function createUser(email: string, password: string) {
 
     await sendEmailVerification(userCredential.user, actionCodeSettings)
     
-    return { success: true, message: 'Account created successfully.', user: userCredential.user };
+    return { 
+      success: true, 
+      message: 'Account created successfully. Please check your email for verification', 
+      user: userCredential.user 
+    };
 
   } catch (error) {
-    // Handle specific Firebase auth errors
-    if (error instanceof Error) {
-      switch (error.message) {
-        case 'auth/too-many-requests':
-          throw new Error('Too many attempts. Please try again later.');
-        case 'auth/network-request-failed':
-            throw new Error('Network disconnected. Please try again later.');
-        case 'auth/email-already-in-use':
-          throw new Error('Email is already registered.');
-        case 'auth/invalid-email':
-          throw new Error('Invalid email address.');
-        case 'auth/operation-not-allowed':
-          throw new Error('Email/password accounts are not enabled.');
-        case 'auth/weak-password':
-          throw new Error('Password is too weak.');
-        default:
-          throw new Error(error.message);
-      }
-    }
-    throw new Error('Failed to create account');
+    const authError = handleFirebaseAuthError(error)
+    return { 
+      success: false, 
+      message: authError.message, 
+      error: authError.code,
+      user: null
+     }
   }
 }
 
@@ -54,12 +53,17 @@ export async function signInWithEmail(email: string, password: string): Promise<
       success: true, 
       message: 'Authentication successful',
       user: UserCredential.user,
-      error: !user.emailVerified ? 'REQUIRES_VERIFICATION' : undefined
+      error: !user.emailVerified ? 'REQUIRES_VERIFICATION' : 'AUTHENTICATED'
     };
   
 } catch (error){
-  const errorMessage = error instanceof Error ? error.message : 'Failed to sign in';
-  throw new Error(errorMessage);
+  const authError = handleFirebaseAuthError(error)
+  return {
+    success: false,
+    message: authError.message,
+    error: authError.code,
+    user: null
+  }
 }
 } 
 
@@ -75,8 +79,13 @@ export async function signInWithRedirectGoogle() {
     await signInWithRedirect(auth, provider)
     return { success: true, message: 'Redirect initiated' }
   } catch (error) {
-    console.error('Error during Google sign-in:', error)
-    return { success: false, error: 'Failed to sign in with Google' }
+    const authError = handleFirebaseAuthError(error)
+    return {
+      success: false,
+      message: authError.message,
+      error: authError.code,
+      user: null
+    }
   }
 }
 
@@ -92,8 +101,13 @@ export async function signInWithMicrosoft() {
     await signInWithRedirect(auth, provider)
     return { success: true, message: 'Redirect initiated' }
   } catch (error) {
-    console.error('Error during Google sign-in:', error)
-    return { success: false, error: 'Failed to sign in with Google' }
+    const authError = handleFirebaseAuthError(error)
+    return {
+      success: false, 
+      message: authError.message,
+      error: authError.code,
+      user: null
+    }
   }
 }
 
@@ -109,8 +123,13 @@ export async function handleAuthRedirectResult() {
       return { success: false, error: 'No redirect result' }
     }
   } catch (error: any) {
-    console.error('Error handling auth redirect result:', error)
-    return { success: false, error: error.message || 'Failed to handle auth redirect', code: error.code }
+    const authError = handleFirebaseAuthError(error)
+    return {
+      success: false,
+      message: authError.message,
+      error: authError.code,
+      user: null
+    }
   }
 }
 
@@ -145,24 +164,12 @@ export async function resendEmailVerification() {
       isVerified: false
      };
     } catch (error) {
-      if (error instanceof Error) {
-        switch (error.message) {
-          case 'auth/too-many-requests':
-            throw new Error('Too many attempts. Please try again later.');
-          case 'auth/network-request-failed':
-              throw new Error('Network disconnected. Please try again later.');
-          case 'auth/email-already-in-use':
-            throw new Error('Email is already registered.');
-          case 'auth/invalid-email':
-            throw new Error('Invalid email address.');
-          case 'auth/operation-not-allowed':
-            throw new Error('Email/password accounts are not enabled.');
-          case 'auth/weak-password':
-            throw new Error('Password is too weak.');
-          default:
-            throw new Error(error.message);
-        }
+      const authError = handleFirebaseAuthError(error)
+      return {
+        success: false,
+        message: authError.message,
+        error: authError.code,
+        user: null
       }
-      throw new Error('Failed to resend verification email.');
     }
 }

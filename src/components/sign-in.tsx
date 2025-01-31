@@ -10,7 +10,7 @@ import { Button } from "./ui/button"
 import { Alert, AlertDescription } from "./ui/alert"
 import { Separator } from "./ui/separator"
 import { cn } from "../lib/utils"
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { getRedirectResult, User } from 'firebase/auth'
 import { ternSecureAuth } from '../utils/client-init'
 import { createSessionCookie } from '../app-router/server/sessionTernSecure'
@@ -19,6 +19,7 @@ import { getValidRedirectUrl } from '../utils/construct'
 import { handleInternalRoute } from '../app-router/route-handler/internal-route'
 import type { SignInResponse } from '../types'
 import { useAuth } from '../boundary/hooks/useAuth'
+import { ErrorAlertVariant, ErrorCode } from '../errors'
 
 
 
@@ -52,10 +53,12 @@ export function SignIn({
 }: SignInProps) {
   const [loading, setLoading] = useState(false)
   const [checkingRedirect, setCheckingRedirect] = useState(true)
-  const [formError, setFormError] = useState("")
+  const [formError, setFormError] = useState<SignInResponse | null>(null)
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [passwordFocused, setPasswordFocused] = useState(false)
   const [authResponse, setAuthResponse] = useState<SignInResponse | null>(null)
   const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null)
   const searchParams = useSearchParams()
@@ -64,7 +67,7 @@ export function SignIn({
   const pathname = usePathname()
   const InternalComponent = handleInternalRoute(pathname || "")
   const { requiresVerification, error: authError, status } = useAuth()
-  const validRedirectUrl = getValidRedirectUrl(redirectUrl, new URLSearchParams(window.location.search))
+  const validRedirectUrl = getValidRedirectUrl(searchParams, redirectUrl)
 
 
   if (InternalComponent) {
@@ -93,7 +96,12 @@ export function SignIn({
         const sessionResult = await createSessionCookie(idToken)
 
         if (!sessionResult.success) {
-          throw new Error(sessionResult.message || "Failed to create session")
+          setFormError({
+            success: false, 
+            message: sessionResult.message || "Failed to create session", 
+            error: 'INTERNAL_ERROR',
+            user: null,
+          })
         }
 
         onSuccess?.()
@@ -138,7 +146,7 @@ export function SignIn({
         const storedRedirectUrl = sessionStorage.getItem('auth_return_url')
         sessionStorage.removeItem('auth_redirect_url') 
         onSuccess?.()
-        window.location.href = storedRedirectUrl || getValidRedirectUrl(redirectUrl, searchParams)
+        window.location.href = storedRedirectUrl || getValidRedirectUrl(searchParams, redirectUrl)
         return true
       }
       setCheckingRedirect(false)
@@ -164,7 +172,9 @@ export function SignIn({
     e.preventDefault()
     setLoading(true)
     setAuthResponse(null)
-    setFormError("")
+    setFormError(null)
+    setAuthErrorMessage(null)
+
 
     try {
       const response = await signInWithEmail(email, password)
@@ -172,14 +182,19 @@ export function SignIn({
 
       if (response.user) {
         if (requiresVerification && !response.user.emailVerified) {
-          setError('Email verification required')
+          setFormError({
+            success: false, 
+            message: 'Email verification required', 
+            error: 'REQUIRES_VERIFICATION',
+            user: null
+          })
           return
         }
         
         await handleSuccessfulAuth(response.user)
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in'
+      const errorMessage = err as SignInResponse
       setFormError(errorMessage)
       onError?.(err instanceof Error ? err : new Error('Failed to sign in'))
     } finally {
@@ -191,7 +206,7 @@ export function SignIn({
     setLoading(true)
     try {
 
-      const validRedirectUrl = getValidRedirectUrl(redirectUrl, searchParams)
+      const validRedirectUrl = getValidRedirectUrl(searchParams, redirectUrl)
       sessionStorage.setItem('auth_redirect_url', validRedirectUrl)
 
       const currentUrl = new URL(window.location.href)
@@ -203,8 +218,9 @@ export function SignIn({
         throw new Error(result.error)
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : `Failed to sign in with ${provider}`
-      setError(errorMessage)
+      const errorMessage = err as SignInResponse
+      //setError(errorMessage)
+      setFormError(errorMessage)
       onError?.(err instanceof Error ? err : new Error(`Failed to sign in with ${provider}`))
       setLoading(false)
       sessionStorage.removeItem('auth_redirect_url')
@@ -228,11 +244,9 @@ export function SignIn({
     )
   }
 
-const showEmailVerificationButton =
-  authResponse?.error === "REQUIRES_VERIFICATION" ||
-  (authError?.error === "EMAIL_NOT_VERIFIED" && status !== "loading" && status !== "unauthenticated")
-
-const showAlert = formError || (authErrorMessage && status !== "loading" && status !== "unauthenticated")
+  const activeError = formError || authResponse
+  const showEmailVerificationButton =
+    activeError?.error === "EMAIL_NOT_VERIFIED" || activeError?.error === "REQUIRES_VERIFICATION"
 
   return (
     <div className="relative flex items-center justify-center">
@@ -246,10 +260,10 @@ const showAlert = formError || (authErrorMessage && status !== "loading" && stat
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {(showAlert) && (
-            <Alert variant={showEmailVerificationButton ? "destructive" : "destructive"}>
+          {activeError && (
+            <Alert variant={ErrorAlertVariant(activeError.error as ErrorCode)}>
               <AlertDescription>
-              <span>{formError || authErrorMessage}</span>
+              <span>{activeError.message}</span>
               {showEmailVerificationButton && (
                     <Button
                       type='button'
@@ -265,6 +279,7 @@ const showAlert = formError || (authErrorMessage && status !== "loading" && stat
           )}
           <div className="space-y-2">
             <Label htmlFor="email" className={cn(customStyles.label)}>Email</Label>
+            <div className="relative">
             <Input
               id="email"
               type="email"
@@ -274,7 +289,24 @@ const showAlert = formError || (authErrorMessage && status !== "loading" && stat
               disabled={loading}
               className={cn(customStyles.input)}
               required
+              aria-invalid={activeError?.error === "INVALID_EMAIL"}
+              aria-describedby={activeError ? "error-message" : undefined}
             />
+            <Button 
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  )}
+                  <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+            </Button>
+          </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password" className={cn(customStyles.label)}>Password</Label>
@@ -286,6 +318,8 @@ const showAlert = formError || (authErrorMessage && status !== "loading" && stat
               disabled={loading}
               className={cn(customStyles.input)}
               required
+              aria-invalid={activeError?.error === "INVALID_CREDENTIALS"}
+              aria-describedby={activeError ? "error-message" : undefined}
             />
           </div>
           <Button type="submit" disabled={loading} className={cn("w-full", customStyles.button)}>

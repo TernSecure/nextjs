@@ -1,4 +1,6 @@
-import { isInternalRoute } from "../app-router/route-handler/internal-route"
+//v2: redict with taking priority from the sign-in page
+
+import { isInternalRoute, isAuthRoute } from "../app-router/route-handler/internal-route"
 
 /**
  * Constructs a full URL with the current origin
@@ -6,6 +8,7 @@ import { isInternalRoute } from "../app-router/route-handler/internal-route"
  * @returns The full URL with origin
  */
 export const constructFullUrl = (path: string) => {
+  if (typeof window === "undefined") return path
     const baseUrl = window.location.origin
     if (path.startsWith('http')) {
       return path
@@ -40,33 +43,34 @@ export const hasRedirectLoop = (currentPath: string, redirectPath: string): bool
  */
 export const constructUrlWithRedirect = (
   path: string,
-  redirectUrl: string,
-  loginPath: string,
-  signUpPath: string,
+  redirectUrl: string | undefined,
 ): string => {
-  // Create the URL with the full origin
-  const url = new URL(path, window.location.origin)
-
-    // Check for redirect loops
-  if (hasRedirectLoop(window.location.pathname, path)) {
-      return url.toString()
-    }
-
-  // If we already have a redirect param, keep it
-  const currentSearchParams = new URLSearchParams(window.location.search)
-  if (currentSearchParams.has("redirect")) {
-    return window.location.href
+  const url = new URL(path, typeof window !== "undefined" ? window.location.origin : undefined)
+  
+  if (redirectUrl && !isAuthRoute(redirectUrl) && !isInternalRoute(redirectUrl)) {
+    url.searchParams.set("redirect", redirectUrl)
   }
-
-  // Add redirect parameter if provided and not redirecting to login/signup
-  if (redirectUrl && !redirectUrl.startsWith(loginPath) && !redirectUrl.startsWith(signUpPath) && !isInternalRoute(redirectUrl)) {
-    // Ensure redirect URL is also absolute if it's not already
-    const fullRedirectUrl = redirectUrl.startsWith("http") ? redirectUrl : constructFullUrl(redirectUrl)
-
-    url.searchParams.set("redirect", fullRedirectUrl)
-  }
-
+  
   return url.toString()
+}
+
+/**
+ * Stores the current path before signing out
+ */
+export const storePreviousPath = (path: string): void => {
+  if (typeof window !== "undefined" && !isAuthRoute(path)) {
+    sessionStorage.setItem("previousPath", path)
+  }
+}
+
+/**
+ * Gets the stored previous path
+ */
+export const getPreviousPath = (): string | null => {
+  if (typeof window !== "undefined") {
+    return sessionStorage.getItem("previousPath")
+  }
+  return null
 }
 
 
@@ -78,49 +82,48 @@ export const constructUrlWithRedirect = (
  * @returns A validated redirect URL
  */
 export const getValidRedirectUrl = (
-  redirectUrl: string | undefined, 
-  searchParams: URLSearchParams
+  searchParams: URLSearchParams,
+  configuredRedirect?: string,
 ): string => {
-  const redirect = redirectUrl || searchParams.get("redirect") || '/'
+  // Check URL search param first (highest priority)
+  const urlRedirect = searchParams.get("redirect")
+  if (urlRedirect) {
+    return validateUrl(urlRedirect)
+  }
 
+  // Then check configured redirect (for first visits)
+  if (configuredRedirect) {
+    return validateUrl(configuredRedirect)
+  }
+
+  // Default fallback
+  return "/"
+}
+
+/**
+ * Validates and sanitizes URLs
+ */
+const validateUrl = (url: string): string => {
   try {
-    if (redirect.startsWith("http")) {
-      const url = new URL(redirect)
-      if (url.origin === window.location.origin) {
-        return redirect
+    // For absolute URLs
+    if (url.startsWith("http")) {
+      const urlObj = new URL(url)
+      if (typeof window !== "undefined" && urlObj.origin !== window.location.origin) {
+        return "/"
       }
-      return '/'
+      return !isAuthRoute(urlObj.pathname) && !isInternalRoute(urlObj.pathname) 
+        ? urlObj.pathname 
+        : "/"
     }
-    return constructFullUrl(redirect)
-  } catch (e) {
-    console.error("Invalid redirect URL:", e)
-    return constructFullUrl('/')
+    
+    // For relative URLs
+    return !isAuthRoute(url) && !isInternalRoute(url) ? url : "/"
+  } catch {
+    return "/"
   }
 }
-  
-  /**
- * Determines the final redirect URL based on multiple sources
- * @param props - Props redirect URL
- * @param params - URL search params
- * @param currentPath - Current path before redirect
- * @returns The validated redirect URL
- */
-export const determineAuthRedirect = (
-  props: string | undefined,
-  params: URLSearchParams,
-  currentPath: string,
-): string => {
-  // Priority order:
-  // 1. URL params redirect_url
-  // 2. Props redirectUrl
-  // 3. Current path
-  // 4. Default path (/)
 
-  const paramRedirect = params.get("redirect_url") || params.get("redirect")
-  const redirect = paramRedirect || props || currentPath || "/"
 
-  return getValidRedirectUrl(redirect, params)
-}
 
 
 
