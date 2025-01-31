@@ -252,6 +252,7 @@ const showAlert = formError || (authErrorMessage && status !== "loading" && stat
               <span>{formError || authErrorMessage}</span>
               {showEmailVerificationButton && (
                     <Button
+                      type='button'
                       variant="link"
                       className="p-0 h-auto font-normal text-sm hover:underline"
                       onClick={handleVerificationRedirect}
