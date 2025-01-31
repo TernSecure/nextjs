@@ -11,13 +11,13 @@ import { Alert, AlertDescription } from "./ui/alert"
 import { Separator } from "./ui/separator"
 import { cn } from "../lib/utils"
 import { Loader2 } from 'lucide-react'
-import { getRedirectResult } from 'firebase/auth'
+import { getRedirectResult, User } from 'firebase/auth'
 import { ternSecureAuth } from '../utils/client-init'
 import { createSessionCookie } from '../app-router/server/sessionTernSecure'
 import { AuthBackground } from './background'
 import { getValidRedirectUrl } from '../utils/construct'
 import { handleInternalRoute } from '../app-router/route-handler/internal-route'
-import type { SignInResponse, AuthError } from '../types'
+import type { SignInResponse } from '../types'
 import { useAuth } from '../boundary/hooks/useAuth'
 
 
@@ -52,25 +52,66 @@ export function SignIn({
 }: SignInProps) {
   const [loading, setLoading] = useState(false)
   const [checkingRedirect, setCheckingRedirect] = useState(true)
+  const [formError, setFormError] = useState("")
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authResponse, setAuthResponse] = useState<SignInResponse | null>(null)
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const isRedirectSignIn = searchParams.get('signInRedirect') === 'true'
   const router = useRouter()
   const pathname = usePathname()
-  const InternalComponent = handleInternalRoute(pathname)
-  const { requiresVerification } = useAuth()
-
-  const redirectParam = searchParams.get("redirect")
-  const validRedirectUrl = getValidRedirectUrl(redirectUrl, searchParams)
-
+  const InternalComponent = handleInternalRoute(pathname || "")
+  const { requiresVerification, error: authError, status } = useAuth()
+  const validRedirectUrl = getValidRedirectUrl(redirectUrl, new URLSearchParams(window.location.search))
 
 
   if (InternalComponent) {
     return <InternalComponent />
   }
+
+  useEffect(() => {
+    if (authError && status !== "loading" && status !== "unauthenticated") {
+
+      const message = authError.message || "Authentication failed"
+      setAuthErrorMessage(message)
+
+      if(!authResponse || authResponse.message !== message) {
+        setAuthResponse(authError as SignInResponse)
+      }
+    } else {
+      setAuthErrorMessage(null)
+    }
+  }, [authError, status, authResponse])
+
+
+  const handleSuccessfulAuth = useCallback(
+    async (user: User) => {
+      try {
+        const idToken = await user.getIdToken()
+        const sessionResult = await createSessionCookie(idToken)
+
+        if (!sessionResult.success) {
+          throw new Error(sessionResult.message || "Failed to create session")
+        }
+
+        onSuccess?.()
+
+        // Use the finalRedirectUrl for navigation
+        if (process.env.NODE_ENV === "production") {
+          // Use window.location.href in production for a full page reload
+          window.location.href = validRedirectUrl
+        } else {
+          // Use router.push in development
+          router.push(validRedirectUrl)
+        }
+      } catch (err) {
+        throw new Error("Failed to complete authentication")
+      }
+    },
+    [validRedirectUrl, router, onSuccess],
+  )
 
 
   const handleRedirectResult = useCallback(async () => {
@@ -114,23 +155,8 @@ export function SignIn({
  ///const REDIRECT_TIMEOUT = 5000;
 
   useEffect(() => {
-    //let timeoutId: NodeJS.Timeout;
-
     if (isRedirectSignIn) {
       handleRedirectResult();
-
-      /*timeoutId = setTimeout(() => {
-        console.warn('Redirect check timed out');
-      setCheckingRedirect(false);
-      setError('Sign in took too long. Please try again.');
-        
-    }, REDIRECT_TIMEOUT);
-    }
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }*/
     };
   }, [handleRedirectResult, isRedirectSignIn])
 
@@ -138,37 +164,23 @@ export function SignIn({
     e.preventDefault()
     setLoading(true)
     setAuthResponse(null)
+    setFormError("")
+
     try {
       const response = await signInWithEmail(email, password)
       setAuthResponse(response)
-
-   //   if (response.error === ERRORS.REQUIRES_VERIFICATION) {
-    //    if (requiresVerification) {
-   //       setError(response.message || 'Email verification required')
-   //       return
-   //   }
-  //  }
 
       if (response.user) {
         if (requiresVerification && !response.user.emailVerified) {
           setError('Email verification required')
           return
         }
-
-        const idToken = await response.user.getIdToken()
-        const sessionResult = await createSessionCookie(idToken)
-
-        if(!sessionResult.success) {
-          throw new Error(sessionResult.message || 'Failed to create session')
-        }
-
-      onSuccess?.()
-      //window.location.href = getValidRedirectUrl(redirectUrl, searchParams)
-      router.push(validRedirectUrl)
+        
+        await handleSuccessfulAuth(response.user)
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in'
-      setError(errorMessage)
+      setFormError(errorMessage)
       onError?.(err instanceof Error ? err : new Error('Failed to sign in'))
     } finally {
       setLoading(false)
@@ -199,6 +211,12 @@ export function SignIn({
     }
   }
 
+  const handleVerificationRedirect = (e: React.MouseEvent) => {
+    e.preventDefault()
+    router.push("/sign-in/verify")
+  }
+
+
   if (checkingRedirect && isRedirectSignIn) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -209,6 +227,12 @@ export function SignIn({
       </div>
     )
   }
+
+const showEmailVerificationButton =
+  authResponse?.error === "REQUIRES_VERIFICATION" ||
+  (authError?.error === "EMAIL_NOT_VERIFIED" && status !== "loading" && status !== "unauthenticated")
+
+const showAlert = formError || (authErrorMessage && status !== "loading" && status !== "unauthenticated")
 
   return (
     <div className="relative flex items-center justify-center">
@@ -222,15 +246,15 @@ export function SignIn({
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {(error || authResponse?.message) && (
-            <Alert variant={authResponse?.error === 'REQUIRES_VERIFICATION'? "destructive" : "destructive"}>
+          {(showAlert) && (
+            <Alert variant={showEmailVerificationButton ? "destructive" : "destructive"}>
               <AlertDescription>
-              <span>{error || authResponse?.message}</span>
-              {authResponse?.error === 'REQUIRES_VERIFICATION' && (
+              <span>{formError || authErrorMessage}</span>
+              {showEmailVerificationButton && (
                     <Button
                       variant="link"
                       className="p-0 h-auto font-normal text-sm hover:underline"
-                      onClick={() => router.push(`/sign-in/verify`)}
+                      onClick={handleVerificationRedirect}
                     >
                       Request new verification email →
                     </Button>
