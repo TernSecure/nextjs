@@ -141,6 +141,7 @@ export function handleFirebaseAuthError(error: unknown): AuthErrorResponse {
   return { success: false, message: 'An unexpected error occurred. Please try again later', code: 'INTERNAL_ERROR' };
 }
 
+
 export function ErrorAlertVariant(errorCode: ErrorCode | undefined) {
   if (!errorCode) return "destructive"
 

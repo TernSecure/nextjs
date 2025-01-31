@@ -100,7 +100,7 @@ export function SignIn({
             success: false, 
             message: sessionResult.message || "Failed to create session", 
             error: 'INTERNAL_ERROR',
-            user: null,
+            user: null
           })
         }
 
@@ -115,7 +115,12 @@ export function SignIn({
           router.push(validRedirectUrl)
         }
       } catch (err) {
-        throw new Error("Failed to complete authentication")
+        setFormError({
+          success: false, 
+          message: "Failed to complete authentication", 
+          error: 'INTERNAL_ERROR',
+          user: null
+        })
       }
     },
     [validRedirectUrl, router, onSuccess],
@@ -171,8 +176,8 @@ export function SignIn({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setAuthResponse(null)
     setFormError(null)
+    setAuthResponse(null)
     setAuthErrorMessage(null)
 
 
@@ -261,9 +266,9 @@ export function SignIn({
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           {activeError && (
-            <Alert variant={ErrorAlertVariant(activeError.error as ErrorCode)}>
+            <Alert variant={ErrorAlertVariant(activeError.error as ErrorCode)} className="animate-in fade-in-50">
               <AlertDescription>
-              <span>{activeError.message}</span>
+              <span>{activeError?.message}</span>
               {showEmailVerificationButton && (
                     <Button
                       type='button'
@@ -279,7 +284,6 @@ export function SignIn({
           )}
           <div className="space-y-2">
             <Label htmlFor="email" className={cn(customStyles.label)}>Email</Label>
-            <div className="relative">
             <Input
               id="email"
               type="email"
@@ -290,6 +294,24 @@ export function SignIn({
               className={cn(customStyles.input)}
               required
               aria-invalid={activeError?.error === "INVALID_EMAIL"}
+              aria-describedby={activeError ? "error-message" : undefined}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className={cn(customStyles.label)}>Password</Label>
+            <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
+              disabled={loading}
+              className={cn(customStyles.input)}
+              required
+              aria-invalid={activeError?.error === "INVALID_CREDENTIALS"}
               aria-describedby={activeError ? "error-message" : undefined}
             />
             <Button 
@@ -306,21 +328,7 @@ export function SignIn({
                   )}
                   <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
             </Button>
-          </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className={cn(customStyles.label)}>Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              className={cn(customStyles.input)}
-              required
-              aria-invalid={activeError?.error === "INVALID_CREDENTIALS"}
-              aria-describedby={activeError ? "error-message" : undefined}
-            />
+            </div>
           </div>
           <Button type="submit" disabled={loading} className={cn("w-full", customStyles.button)}>
             {loading ? (

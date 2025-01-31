@@ -11,8 +11,6 @@ import type { SignInResponse } from '../../types'
 import { handleFirebaseAuthError } from '../../errors'
 
 
-
-
 export async function createUser(email: string, password: string): Promise<SignInResponse> {
   const auth = TernSecureAuth()
   try {
@@ -52,7 +50,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
   return { 
       success: true, 
       message: 'Authentication successful',
-      user: UserCredential.user,
+      user: user,
       error: !user.emailVerified ? 'REQUIRES_VERIFICATION' : 'AUTHENTICATED'
     };
   
