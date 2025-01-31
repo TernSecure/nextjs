@@ -170,7 +170,7 @@ export function SignIn({
   useEffect(() => {
     if (isRedirectSignIn) {
       handleRedirectResult();
-    };
+    }
   }, [handleRedirectResult, isRedirectSignIn])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -179,7 +179,6 @@ export function SignIn({
     setFormError(null)
     setAuthResponse(null)
     setAuthErrorMessage(null)
-
 
     try {
       const response = await signInWithEmail(email, password)
