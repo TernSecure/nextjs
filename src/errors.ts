@@ -312,7 +312,7 @@ export function isAuthErrorResponse(response: unknown): response is AuthErrorRes
 
 
 export function getErrorAlertVariant(error: SignInResponse | undefined) {
- if (!error || error.success) return "destructive"
+ if (!error) return "destructive"
 
   switch (error.error) {
     case "AUTHENTICATED":
