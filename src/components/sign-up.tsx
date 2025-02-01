@@ -154,7 +154,7 @@ export function SignUp({
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
-              <Alert variant={getErrorAlertVariant(error.error as ErrorCode)} className="animate-in fade-in-50">
+              <Alert variant={getErrorAlertVariant(error)} className="animate-in fade-in-50">
                 <AlertDescription>{error.message}</AlertDescription>
               </Alert>
             )}

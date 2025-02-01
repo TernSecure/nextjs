@@ -279,7 +279,7 @@ const showEmailVerificationButton =
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           {activeError && (
-            <Alert variant={getErrorAlertVariant((activeError.error || 'INTERNAL_ERROR') as ErrorCode)} className="animate-in fade-in-50">
+            <Alert variant={getErrorAlertVariant(activeError)} className="animate-in fade-in-50">
               <AlertDescription>
               <span>{activeError.message}</span>
               {showEmailVerificationButton && (
