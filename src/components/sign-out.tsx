@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
 import { ternSecureAuth } from '../utils/client-init'
 import { clearSessionCookie } from '../app-router/server/sessionTernSecure'
 import { cn } from '../lib/utils'
 import Link from 'next/link'
+import { constructUrlWithRedirect } from '../utils/construct'
+
 
 interface SignOutLinkProps {
   children?: React.ReactNode
@@ -15,6 +17,7 @@ interface SignOutLinkProps {
   className?: string
   activeClassName?: string
   disabled?: boolean
+  redirectPath?: string
 }
 
 export function SignOut({
@@ -24,9 +27,12 @@ export function SignOut({
   className,
   activeClassName,
   disabled = false,
+  redirectPath,
 }: SignOutLinkProps) {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+  const loginPath = process.env.NEXT_PUBLIC_LOGIN_PATH || "/sign-in"
 
   const handleSignOut = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
@@ -34,10 +40,24 @@ export function SignOut({
 
     setIsLoading(true)
     try {
+      // Sign out from Firebase
       await signOut(ternSecureAuth)
+
+      // Clear the session cookie
       await clearSessionCookie()
+
+      // Call success callback if provided
       onSignOutSuccess?.()
-      router.push('/sign-in')
+
+      // Construct login URL with redirect parameter
+      const loginUrl = constructUrlWithRedirect(loginPath, pathname)
+
+      // Use router for development and window.location for production
+      if (process.env.NODE_ENV === "production") {
+        window.location.href = loginUrl
+      } else {
+        router.push(loginUrl)
+      }
     } catch (error) {
       console.error('Sign out error:', error)
       onError?.(error instanceof Error ? error : new Error('Failed to sign out'))

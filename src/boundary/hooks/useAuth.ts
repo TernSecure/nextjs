@@ -3,6 +3,8 @@
 import { useTernSecure } from '../TernSecureCtx'
 import {  User } from 'firebase/auth'
 import { TernSecureUser } from '../TernSecureCtx'
+import type { SignInResponse } from '../../types'
+
 
 export function useAuth() {
   const {
@@ -13,28 +15,27 @@ export function useAuth() {
     isVerified,
     isAuthenticated,
     token,
+    getAuthError,
+    status,
+    requiresVerification,
     signOut
   } = useTernSecure('useAuth')
 
   const user: User | null = TernSecureUser()
+  const authResponse: SignInResponse = getAuthError()
 
-  const getAuthError = () => {
-    if (error) return error
-    if (isValid && !isVerified) {
-      return new Error('Email verification required')
-    }
-    return null
-  }
 
   return {
     user,
     userId,
     isLoaded,
-    error: getAuthError(),
+    error: authResponse.success ? null : authResponse,
     isValid,         // User is signed in
     isVerified,      // Email is verified
     isAuthenticated, // User is both signed in and verified
     token,
+    status,
+    requiresVerification,
     signOut
   }
 }

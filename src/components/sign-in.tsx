@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname} from 'next/navigation'
-import { signInWithEmail, signInWithRedirectGoogle, signInWithMicrosoft, type SignInResponse } from '../app-router/client/actions'
+import { signInWithEmail, signInWithRedirectGoogle, signInWithMicrosoft } from '../app-router/client/actions'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -10,14 +10,17 @@ import { Button } from "./ui/button"
 import { Alert, AlertDescription } from "./ui/alert"
 import { Separator } from "./ui/separator"
 import { cn } from "../lib/utils"
-import { Loader2 } from 'lucide-react'
-import { getRedirectResult } from 'firebase/auth'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
+import { getRedirectResult, User } from 'firebase/auth'
 import { ternSecureAuth } from '../utils/client-init'
 import { createSessionCookie } from '../app-router/server/sessionTernSecure'
 import { AuthBackground } from './background'
 import { getValidRedirectUrl } from '../utils/construct'
-import  { ERRORS } from '../errors'
 import { handleInternalRoute } from '../app-router/route-handler/internal-route'
+import type { SignInResponse } from '../types'
+import { useAuth } from '../boundary/hooks/useAuth'
+import { getErrorAlertVariant, ErrorCode } from '../errors'
+
 
 
 const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
@@ -28,7 +31,6 @@ export interface SignInProps {
   redirectUrl?: string
   onError?: (error: Error) => void
   onSuccess?: () => void
-  requiresVerification?: boolean
   className?: string
   customStyles?: {
     card?: string
@@ -42,29 +44,87 @@ export interface SignInProps {
   }
 }
 
+
 export function SignIn({
   redirectUrl,
   onError,
   onSuccess,
-  requiresVerification = true,
   className,
   customStyles = {}
 }: SignInProps) {
   const [loading, setLoading] = useState(false)
   const [checkingRedirect, setCheckingRedirect] = useState(true)
+  const [formError, setFormError] = useState<SignInResponse | null>(null)
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [passwordFocused, setPasswordFocused] = useState(false)
   const [authResponse, setAuthResponse] = useState<SignInResponse | null>(null)
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const isRedirectSignIn = searchParams.get('signInRedirect') === 'true'
   const router = useRouter()
   const pathname = usePathname()
-  const InternalComponent = handleInternalRoute(pathname)
+  const InternalComponent = handleInternalRoute(pathname || "")
+  const { requiresVerification, error: authError, status } = useAuth()
+  const validRedirectUrl = getValidRedirectUrl(searchParams, redirectUrl)
+
 
   if (InternalComponent) {
     return <InternalComponent />
   }
+
+  useEffect(() => {
+    if (authError && status !== "loading" && status !== "unauthenticated") {
+
+      const message = authError.message || "Authentication failed"
+      setAuthErrorMessage(message)
+
+      if(!authResponse || authResponse.message !== message) {
+        setAuthResponse(authError as SignInResponse)
+      }
+    } else {
+      setAuthErrorMessage(null)
+    }
+  }, [authError, status, authResponse])
+
+  const handleSuccessfulAuth = useCallback(
+    async (user: User) => {
+      try {
+        const idToken = await user.getIdToken()
+        const sessionResult = await createSessionCookie(idToken)
+
+        if (!sessionResult.success) {
+          setFormError({
+            success: false, 
+            message: sessionResult.message || "Failed to create session", 
+            error: 'INTERNAL_ERROR', 
+            user: null
+          })
+        }
+
+        onSuccess?.()
+
+        // Use the finalRedirectUrl for navigation
+        if (process.env.NODE_ENV === "production") {
+          // Use window.location.href in production for a full page reload
+          window.location.href = validRedirectUrl
+        } else {
+          // Use router.push in development
+          router.push(validRedirectUrl)
+        }
+      } catch (err) {
+        setFormError({
+          success: false, 
+          message: "Failed to complete authentication", 
+          error: 'INTERNAL_ERROR', 
+          user: null
+        })
+      }
+    },
+    [validRedirectUrl, router, onSuccess],
+  )
 
 
   const handleRedirectResult = useCallback(async () => {
@@ -91,78 +151,68 @@ export function SignIn({
         const storedRedirectUrl = sessionStorage.getItem('auth_return_url')
         sessionStorage.removeItem('auth_redirect_url') 
         onSuccess?.()
-        window.location.href = storedRedirectUrl || getValidRedirectUrl(redirectUrl, searchParams)
+        window.location.href = storedRedirectUrl || getValidRedirectUrl(searchParams, redirectUrl)
         return true
       }
       setCheckingRedirect(false)
-    } catch (err) {
-      console.error('Redirect result error:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
-      setError(errorMessage)
-      onError?.(err instanceof Error ? err : new Error(errorMessage))
+    } catch (err) { 
+      const errorMessage = err as SignInResponse
+      setFormError(errorMessage)
+      if (onError && err instanceof Error) {
+        onError(err)
+      }
       sessionStorage.removeItem('auth_redirect_url')
       return false
     }
   }, [isRedirectSignIn, redirectUrl, searchParams, onSuccess, onError])
 
- ///const REDIRECT_TIMEOUT = 5000;
+ //const REDIRECT_TIMEOUT = 5000;
 
   useEffect(() => {
-    //let timeoutId: NodeJS.Timeout;
-
     if (isRedirectSignIn) {
-      handleRedirectResult();
-
-      /*timeoutId = setTimeout(() => {
-        console.warn('Redirect check timed out');
-      setCheckingRedirect(false);
-      setError('Sign in took too long. Please try again.');
-        
-    }, REDIRECT_TIMEOUT);
+      handleRedirectResult()
     }
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }*/
-    };
   }, [handleRedirectResult, isRedirectSignIn])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setFormError(null)
     setAuthResponse(null)
+
     try {
-      const response = await signInWithEmail(email, password)
+      const response= await signInWithEmail(email, password)
       setAuthResponse(response)
 
-   //   if (response.error === ERRORS.REQUIRES_VERIFICATION) {
-    //    if (requiresVerification) {
-   //       setError(response.message || 'Email verification required')
-   //       return
-   //   }
-  //  }
+      if (!response.success) {
+        setFormError({
+          success: false, 
+          message: response.message, 
+          error: response.error, 
+          user: null
+        })
+        return
+      }
 
       if (response.user) {
-        if (requiresVerification && !response.user.emailVerified) {
-          setError('Email verification required')
+        if(requiresVerification && !response.user.emailVerified) {
+          setFormError({
+            success: false, 
+            message: 'Email verification required', 
+            error: 'REQUIRES_VERIFICATION', 
+            user: response.user
+          })
           return
-        }
-
-        const idToken = await response.user.getIdToken()
-        const sessionResult = await createSessionCookie(idToken)
-
-        if(!sessionResult.success) {
-          throw new Error(sessionResult.message || 'Failed to create session')
-        }
-
-      onSuccess?.()
-      window.location.href = getValidRedirectUrl(redirectUrl, searchParams)
       }
+
+      await handleSuccessfulAuth(response.user)
+    }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in'
-      setError(errorMessage)
-      onError?.(err instanceof Error ? err : new Error('Failed to sign in'))
+      const errorMessage = err as SignInResponse
+      setFormError(errorMessage)
+      if (onError && err instanceof Error) {
+        onError(err)
+      }
     } finally {
       setLoading(false)
     }
@@ -172,7 +222,7 @@ export function SignIn({
     setLoading(true)
     try {
 
-      const validRedirectUrl = getValidRedirectUrl(redirectUrl, searchParams)
+      const validRedirectUrl = getValidRedirectUrl(searchParams, redirectUrl)
       sessionStorage.setItem('auth_redirect_url', validRedirectUrl)
 
       const currentUrl = new URL(window.location.href)
@@ -184,13 +234,21 @@ export function SignIn({
         throw new Error(result.error)
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : `Failed to sign in with ${provider}`
-      setError(errorMessage)
-      onError?.(err instanceof Error ? err : new Error(`Failed to sign in with ${provider}`))
+      const errorMessage = err as SignInResponse
+      setFormError(errorMessage)
+      if (onError && err instanceof Error) {
+        onError(err)
+      }
       setLoading(false)
       sessionStorage.removeItem('auth_redirect_url')
     }
   }
+
+  const handleVerificationRedirect = (e: React.MouseEvent) => {
+    e.preventDefault()
+    router.push("/sign-in/verify")
+  }
+
 
   if (checkingRedirect && isRedirectSignIn) {
     return (
@@ -203,32 +261,38 @@ export function SignIn({
     )
   }
 
+
+const activeError = formError || authResponse
+const showEmailVerificationButton =
+  activeError?.error === "EMAIL_NOT_VERIFIED" || activeError?.error === "REQUIRES_VERIFICATION"
+
   return (
     <div className="relative flex items-center justify-center">
       <AuthBackground />
     <Card className={cn("w-full max-w-md mx-auto mt-8", className, customStyles.card)}>
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className={cn("font-bold", customStyles.title)}>Sign in to {`${appName}`}</CardTitle>
+        <CardTitle className={cn("font-bold", customStyles.title)}>Sign in to {`${appName}`} </CardTitle>
         <CardDescription className={cn("text-muted-foreground", customStyles.description)}>
           Please sign in to continue
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <Alert variant={authResponse?.error === ERRORS.REQUIRES_VERIFICATION ? "destructive" : "destructive"}>
+          {activeError && (
+            <Alert variant={getErrorAlertVariant(activeError)} className="animate-in fade-in-50">
               <AlertDescription>
-              <span>{error}</span>
-              {authResponse?.error === ERRORS.REQUIRES_VERIFICATION && (
+              <span>{activeError.message}</span>
+              {showEmailVerificationButton && (
                     <Button
+                      type='button'
                       variant="link"
                       className="p-0 h-auto font-normal text-sm hover:underline"
-                      onClick={() => router.push(`/sign-in/verify`)}
+                      onClick={handleVerificationRedirect}
                     >
                       Request new verification email →
                     </Button>
                   )}
-                </AlertDescription>
+              </AlertDescription>
             </Alert>
           )}
           <div className="space-y-2">
@@ -242,19 +306,42 @@ export function SignIn({
               disabled={loading}
               className={cn(customStyles.input)}
               required
+              aria-invalid={activeError?.error === "INVALID_EMAIL"}
+              aria-describedby={activeError ? "error-message" : undefined}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password" className={cn(customStyles.label)}>Password</Label>
+            <div className="relative">
             <Input
               id="password"
-              type="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
               disabled={loading}
               className={cn(customStyles.input)}
               required
+              aria-invalid={activeError?.error === "INVALID_CREDENTIALS"}
+              aria-describedby={activeError ? "error-message" : undefined}
             />
+          <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  )}
+                  <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                </Button>
+            </div>
           </div>
           <Button type="submit" disabled={loading} className={cn("w-full", customStyles.button)}>
             {loading ? (
@@ -268,11 +355,9 @@ export function SignIn({
           </Button>
         </form>
         <div className="relative">
-           <div className="absolute inset-0 flex items-center">
           <Separator className={cn(customStyles.separator)} />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="bg-background px-2 text-muted-foreground text-sm">Or continue with</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
