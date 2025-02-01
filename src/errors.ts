@@ -330,13 +330,6 @@ export function getErrorAlertVariant(error: SignInResponse | undefined) {
     case "SESSION_EXPIRED":
     case "EXPIRED_TOKEN":
     case "INVALID_CREDENTIALS":
-    case "INVALID_EMAIL":
-    case "INVALID_TOKEN":
-    case "INTERNAL_ERROR":
-    case "USER_DISABLED":
-    case "TOO_MANY_ATTEMPTS":
-    case "NETWORK_ERROR":
-    case "INVALID_CREDENTIALS":
     default:
       return "destructive"
   }
