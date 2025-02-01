@@ -1,5 +1,5 @@
 import { FirebaseOptions } from 'firebase/app'
-import { ErrorCode, ERRORS } from './errors'
+import { ERRORS } from './errors'
 
 
 /**
@@ -73,7 +73,7 @@ export interface AdminConfigValidationResult {
 export interface SignInResponse {
   success: boolean;
   message?: string;
-  error?: ErrorCode; 
+  error?: keyof typeof ERRORS | undefined; 
   user?: any;
 }
 

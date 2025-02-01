@@ -16,7 +16,7 @@ import { createUser, signInWithRedirectGoogle, signInWithMicrosoft } from '../ap
 import { useSignUp } from '../boundary/hooks/useSignUp'
 import { handleInternalRoute } from '../app-router/route-handler/internal-route'
 import { SignInResponse } from "../types"
-import { ErrorAlertVariant, ErrorCode} from "../errors"
+import { getErrorAlertVariant, ErrorCode} from "../errors"
 
 export interface SignUpProps {
     redirectUrl?: string
@@ -28,6 +28,7 @@ export interface PasswordRequirement {
   text: string
   satisfied: boolean
 }
+
 
 export function SignUp({
     redirectUrl, 
@@ -153,7 +154,7 @@ export function SignUp({
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
-              <Alert variant={ErrorAlertVariant(error.error as ErrorCode)} className="animate-in fade-in-50">
+              <Alert variant={getErrorAlertVariant(error.error as ErrorCode)} className="animate-in fade-in-50">
                 <AlertDescription>{error.message}</AlertDescription>
               </Alert>
             )}

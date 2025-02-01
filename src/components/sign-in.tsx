@@ -19,7 +19,7 @@ import { getValidRedirectUrl } from '../utils/construct'
 import { handleInternalRoute } from '../app-router/route-handler/internal-route'
 import type { SignInResponse } from '../types'
 import { useAuth } from '../boundary/hooks/useAuth'
-import { ErrorAlertVariant, ErrorCode } from '../errors'
+import { getErrorAlertVariant, ErrorCode } from '../errors'
 
 
 
@@ -43,6 +43,7 @@ export interface SignInProps {
     socialButton?: string
   }
 }
+
 
 export function SignIn({
   redirectUrl,
@@ -184,7 +185,12 @@ export function SignIn({
       setAuthResponse(response)
 
       if (!response.success) {
-        setFormError(response)
+        setFormError({
+          success: false, 
+          message: response.message, 
+          error: response.error, 
+          user: null
+        })
         return
       }
 
@@ -273,7 +279,7 @@ const showEmailVerificationButton =
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           {activeError && (
-            <Alert variant={ErrorAlertVariant(activeError.error as ErrorCode)} className="animate-in fade-in-50">
+            <Alert variant={getErrorAlertVariant((activeError.error || 'INTERNAL_ERROR') as ErrorCode)} className="animate-in fade-in-50">
               <AlertDescription>
               <span>{activeError.message}</span>
               {showEmailVerificationButton && (
