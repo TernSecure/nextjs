@@ -141,7 +141,6 @@ export function handleFirebaseAuthError(error: unknown): AuthErrorResponse {
   return { success: false, message: 'An unexpected error occurred. Please try again later', code: 'INTERNAL_ERROR' };
 }
 
-
 export function ErrorAlertVariant(errorCode: ErrorCode | undefined) {
   if (!errorCode) return "destructive"
 
@@ -154,18 +153,6 @@ export function ErrorAlertVariant(errorCode: ErrorCode | undefined) {
     case "UNAUTHENTICATED":
     case "UNVERIFIED":
     case "REQUIRES_VERIFICATION":
-    case "INVALID_EMAIL":
-    case "INVALID_TOKEN":
-    case "INTERNAL_ERROR":
-    case "INVALID_PHONE_NUMBER":
-    case "INVALID_VERIFICATION_CODE":
-    case "INVALID_VERIFICATION_ID":
-    case "MISSING_VERIFICATION_CODE":
-    case "MISSING_VERIFICATION_ID":
-    case "ID_TOKEN_EXPIRED":
-    case "ID_TOKEN_REVOKED":
-    case "INVALID_ID_TOKEN":
-    case "SESSION_COOKIE_EXPIRED":
     case "PROJECT_NOT_FOUND":
     case "INSUFFICIENT_PERMISSION":
     case "USER_DISABLED":
@@ -186,8 +173,6 @@ export function ErrorAlertVariant(errorCode: ErrorCode | undefined) {
     case "ID_TOKEN_REVOKED":
     case "INVALID_ID_TOKEN":
     case "SESSION_COOKIE_EXPIRED":
-    case "PROJECT_NOT_FOUND":
-    case "INSUFFICIENT_PERMISSION":
     case "USER_DISABLED":
     case "TOO_MANY_ATTEMPTS":
     case "NETWORK_ERROR":

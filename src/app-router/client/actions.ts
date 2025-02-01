@@ -47,23 +47,32 @@ export async function signInWithEmail(email: string, password: string): Promise<
   try {
   const UserCredential = await signInWithEmailAndPassword(auth, email, password)
   const user = UserCredential.user
+
+  if (!user.emailVerified) {
+    return {
+      success: false,
+      message: "Email verification required",
+      error: "EMAIL_NOT_VERIFIED",
+      user,
+    }
+  }
+
   return { 
-      success: true, 
-      message: 'Authentication successful',
-      user: user,
-      error: !user.emailVerified ? 'REQUIRES_VERIFICATION' : 'AUTHENTICATED'
-    };
-  
+    success: true, 
+    message: 'Authentication successful',
+    user: user,
+  };
+
 } catch (error){
   const authError = handleFirebaseAuthError(error)
-  return {
+  return { 
     success: false,
     message: authError.message,
     error: authError.code,
     user: null
   }
 }
-} 
+}
 
 export async function signInWithRedirectGoogle() {
   const auth = TernSecureAuth()

@@ -88,7 +88,6 @@ export function SignIn({
     }
   }, [authError, status, authResponse])
 
-
   const handleSuccessfulAuth = useCallback(
     async (user: User) => {
       try {
@@ -99,7 +98,7 @@ export function SignIn({
           setFormError({
             success: false, 
             message: sessionResult.message || "Failed to create session", 
-            error: 'INTERNAL_ERROR',
+            error: 'INTERNAL_ERROR', 
             user: null
           })
         }
@@ -118,7 +117,7 @@ export function SignIn({
         setFormError({
           success: false, 
           message: "Failed to complete authentication", 
-          error: 'INTERNAL_ERROR',
+          error: 'INTERNAL_ERROR', 
           user: null
         })
       }
@@ -155,21 +154,22 @@ export function SignIn({
         return true
       }
       setCheckingRedirect(false)
-    } catch (err) {
-      console.error('Redirect result error:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
-      setError(errorMessage)
-      onError?.(err instanceof Error ? err : new Error(errorMessage))
+    } catch (err) { 
+      const errorMessage = err as SignInResponse
+      setFormError(errorMessage)
+      if (onError && err instanceof Error) {
+        onError(err)
+      }
       sessionStorage.removeItem('auth_redirect_url')
       return false
     }
   }, [isRedirectSignIn, redirectUrl, searchParams, onSuccess, onError])
 
- ///const REDIRECT_TIMEOUT = 5000;
+ //const REDIRECT_TIMEOUT = 5000;
 
   useEffect(() => {
     if (isRedirectSignIn) {
-      handleRedirectResult();
+      handleRedirectResult()
     }
   }, [handleRedirectResult, isRedirectSignIn])
 
@@ -178,29 +178,35 @@ export function SignIn({
     setLoading(true)
     setFormError(null)
     setAuthResponse(null)
-    setAuthErrorMessage(null)
 
     try {
-      const response = await signInWithEmail(email, password)
+      const response= await signInWithEmail(email, password)
       setAuthResponse(response)
 
+      if (!response.success) {
+        setFormError(response)
+        return
+      }
+
       if (response.user) {
-        if (requiresVerification && !response.user.emailVerified) {
+        if(requiresVerification && !response.user.emailVerified) {
           setFormError({
             success: false, 
             message: 'Email verification required', 
-            error: 'REQUIRES_VERIFICATION',
-            user: null
+            error: 'REQUIRES_VERIFICATION', 
+            user: response.user
           })
           return
-        }
-        
-        await handleSuccessfulAuth(response.user)
       }
+
+      await handleSuccessfulAuth(response.user)
+    }
     } catch (err) {
       const errorMessage = err as SignInResponse
       setFormError(errorMessage)
-      onError?.(err instanceof Error ? err : new Error('Failed to sign in'))
+      if (onError && err instanceof Error) {
+        onError(err)
+      }
     } finally {
       setLoading(false)
     }
@@ -223,9 +229,10 @@ export function SignIn({
       }
     } catch (err) {
       const errorMessage = err as SignInResponse
-      //setError(errorMessage)
       setFormError(errorMessage)
-      onError?.(err instanceof Error ? err : new Error(`Failed to sign in with ${provider}`))
+      if (onError && err instanceof Error) {
+        onError(err)
+      }
       setLoading(false)
       sessionStorage.removeItem('auth_redirect_url')
     }
@@ -248,16 +255,17 @@ export function SignIn({
     )
   }
 
-  const activeError = formError || authResponse
-  const showEmailVerificationButton =
-    activeError?.error === "EMAIL_NOT_VERIFIED" || activeError?.error === "REQUIRES_VERIFICATION"
+
+const activeError = formError || authResponse
+const showEmailVerificationButton =
+  activeError?.error === "EMAIL_NOT_VERIFIED" || activeError?.error === "REQUIRES_VERIFICATION"
 
   return (
     <div className="relative flex items-center justify-center">
       <AuthBackground />
     <Card className={cn("w-full max-w-md mx-auto mt-8", className, customStyles.card)}>
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className={cn("font-bold", customStyles.title)}>Sign in to {`${appName}`}</CardTitle>
+        <CardTitle className={cn("font-bold", customStyles.title)}>Sign in to {`${appName}`} </CardTitle>
         <CardDescription className={cn("text-muted-foreground", customStyles.description)}>
           Please sign in to continue
         </CardDescription>
@@ -267,7 +275,7 @@ export function SignIn({
           {activeError && (
             <Alert variant={ErrorAlertVariant(activeError.error as ErrorCode)} className="animate-in fade-in-50">
               <AlertDescription>
-              <span>{activeError?.message}</span>
+              <span>{activeError.message}</span>
               {showEmailVerificationButton && (
                     <Button
                       type='button'
@@ -278,7 +286,7 @@ export function SignIn({
                       Request new verification email →
                     </Button>
                   )}
-                </AlertDescription>
+              </AlertDescription>
             </Alert>
           )}
           <div className="space-y-2">
@@ -313,20 +321,20 @@ export function SignIn({
               aria-invalid={activeError?.error === "INVALID_CREDENTIALS"}
               aria-describedby={activeError ? "error-message" : undefined}
             />
-            <Button 
+          <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
+                >
+                  {showPassword ? (
                     <EyeOff className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                   ) : (
                     <Eye className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                   )}
                   <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
-            </Button>
+                </Button>
             </div>
           </div>
           <Button type="submit" disabled={loading} className={cn("w-full", customStyles.button)}>
@@ -341,11 +349,9 @@ export function SignIn({
           </Button>
         </form>
         <div className="relative">
-           <div className="absolute inset-0 flex items-center">
           <Separator className={cn(customStyles.separator)} />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="bg-background px-2 text-muted-foreground text-sm">Or continue with</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
