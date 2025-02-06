@@ -1,5 +1,17 @@
 # @tern-secure/nextjs
 
+## 4.2.0
+
+### Minor Changes
+
+- 1496d6e: chore: Enhance authentication middleware and session management
+
+  - Update auth mechanism to support edge runtime
+  - Implement flexible route matching for public paths
+  - Add robust session verification using multiple methods
+  - Improve error handling and user information extraction
+  - Update session cookie and token management
+
 ## 4.1.0
 
 ### Minor Changes
