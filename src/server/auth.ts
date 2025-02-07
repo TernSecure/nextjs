@@ -1,6 +1,6 @@
 'use server'
 import { cookies, headers } from "next/headers"
-import type { UserInfo, SessionResult } from "./edge-session"
+import type { UserInfo } from "./types"
 
 
 export interface AuthResult {
@@ -45,7 +45,7 @@ export interface AuthResult {
         error: new Error("No valid session or token found"),
       }
     } catch (error) {
-      console.error("Error in getAuthResult:", error)
+      console.error("Error in get AuthResult:", error)
       return {
         user: null,
         token: null,
