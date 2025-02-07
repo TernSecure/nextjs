@@ -13,7 +13,7 @@ import { cn } from "../lib/utils"
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { getRedirectResult, User } from 'firebase/auth'
 import { ternSecureAuth } from '../utils/client-init'
-import { createSessionCookie } from '../app-router/server/sessionTernSecure'
+import { createSessionCookie } from '../app-router/admin/sessionTernSecure'
 import { AuthBackground } from './background'
 import { getValidRedirectUrl } from '../utils/construct'
 import { handleInternalRoute } from '../app-router/route-handler/internal-route'

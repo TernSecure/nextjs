@@ -44,7 +44,9 @@
   },
   "types": "./dist/types/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "server",
+    "admin"
   ],
   "sideEffects": false,
   "peerDependencies": {
@@ -61,9 +63,14 @@
       "require": "./dist/cjs/index.js"
     },
     "./server": {
-      "types": "./dist/types/app-router/server/index.d.ts",
-      "import": "./dist/esm/app-router/server/index.js",
-      "require": "./dist/cjs/app-router/server/index.js"
+      "types": "./dist/types/server/index.d.ts",
+      "import": "./dist/esm/server/index.js",
+      "require": "./dist/cjs/server/index.js"
+    },
+    "./admin": {
+      "types": "./dist/types/app-router/admin/index.d.ts",
+      "import": "./dist/esm/app-router/admin/index.js",
+      "require": "./dist/cjs/app-router/admin/index.js"
     }
   },
   "dependencies": {
