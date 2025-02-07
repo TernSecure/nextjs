@@ -152,4 +152,3 @@ export async function verifyFirebaseToken(token: string, isSessionCookie = false
     }
   }
 }
-

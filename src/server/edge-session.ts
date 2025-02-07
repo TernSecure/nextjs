@@ -1,5 +1,4 @@
-import { cookies } from "next/headers"
-import { verifyFirebaseToken } from "./jwt"
+import { verifyFirebaseToken } from "./jwt-edge"
 import type { NextRequest } from "next/server"
 
 export interface UserInfo {
@@ -17,12 +16,13 @@ export interface SessionResult {
   error?: string
 }
 
+
 export async function verifySession(request: NextRequest): Promise<SessionResult> {
   try {
-    const cookieStore = await cookies()
+    //const cookieStore = await cookies()
 
     // First try session cookie
-    const sessionCookie = cookieStore.get("_session_cookie")?.value
+    const sessionCookie = request.cookies.get("_session_cookie")?.value
     if (sessionCookie) {
       const result = await verifyFirebaseToken(sessionCookie, true)
       if (result.valid) {
@@ -40,7 +40,7 @@ export async function verifySession(request: NextRequest): Promise<SessionResult
     }
 
     // Then try ID token
-    const idToken = cookieStore.get("_session_token")?.value
+    const idToken = request.cookies.get("_session_token")?.value
     if (idToken) {
       const result = await verifyFirebaseToken(idToken, false)
       if (result.valid) {

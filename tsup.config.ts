@@ -23,5 +23,5 @@ const cjsConfig: Options = {
 
 export default defineConfig([
     esmConfig,
-    cjsConfig
+    cjsConfig,
 ]);

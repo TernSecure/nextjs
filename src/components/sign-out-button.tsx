@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
 import { Button, type ButtonProps } from './ui/button'
 import { ternSecureAuth } from '../utils/client-init'
-import { clearSessionCookie } from '../app-router/server/sessionTernSecure'
+import { clearSessionCookie } from '../app-router/admin/sessionTernSecure'
 import { cn } from '../lib/utils'
 import { constructUrlWithRedirect } from '../utils/construct'
 

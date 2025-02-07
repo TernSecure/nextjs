@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers'
 import { verifySession, type UserInfo } from './edge-session'
-import { verifyFirebaseToken } from './jwt';
 
 export const runtime = "edge"
 
@@ -38,66 +36,7 @@ export function createRouteMatcher(patterns: string[]) {
 /**
  * Edge-compatible auth check
  */
-async function edgeAuth(request: NextRequest): Promise<Auth>{
-  const cookieStore = await cookies()
-
-  async function protect() {
-    const { pathname } = request.nextUrl
-    throw new Error('Unauthorized access')
-  }
-
-  try {
-    // First try session cookie
-    const sessionCookie = cookieStore.get("_session_cookie")?.value
-    if (sessionCookie) {
-      const userInfo = await verifyFirebaseToken(sessionCookie, true)
-      console.log('userInfo', userInfo)
-      if (userInfo.valid) {
-        return { 
-          user: {
-            uid: userInfo.uid ?? '',
-            email: userInfo.email ?? null,
-          },
-          token: sessionCookie,
-          protect: async () => {}
-        }
-      }
-    }
-
-    // Then try ID token
-    const idToken = cookieStore.get("_session_token")?.value
-    if (idToken) {
-      const userInfo = await verifyFirebaseToken(idToken, false)
-      if (userInfo.valid) {
-        return { 
-          user: {
-            uid: userInfo.uid ?? '',
-            email: userInfo.email ?? null,
-          },
-          token: idToken,
-          protect: async () => {}
-        }
-      }
-    }
-
-    return {
-      user: null,
-      token: null,
-      protect
-    }
-  } catch (error) {
-    return {
-      user: null,
-      token: null,
-      protect
-    }
-  }
-}
-
-/**
- * Edge-compatible auth check
- */
-async function edgeAuthSecond(request: NextRequest): Promise<Auth> {
+async function edgeAuth(request: NextRequest): Promise<Auth> {
   async function protect() {
     throw new Error("Unauthorized access")
   }
@@ -138,7 +77,7 @@ async function edgeAuthSecond(request: NextRequest): Promise<Auth> {
 export function ternSecureMiddleware(callback: MiddlewareCallback) {
   return async function middleware(request: NextRequest) {
     try {
-      const auth = await edgeAuthSecond(request)
+      const auth = await edgeAuth(request)
 
       try {
         
