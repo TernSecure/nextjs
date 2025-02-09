@@ -88,23 +88,9 @@ export async function verifyFirebaseToken(token: string, isSessionCookie = false
         })
 
         const firebasePayload = payload as unknown as FirebaseIdTokenPayload
-        const now = Math.floor(Date.now() / 1000)
-
-        // Verify token claims
-        if (firebasePayload.exp <= now) {
-          throw new Error("Token has expired")
-        }
-
-        if (firebasePayload.iat > now) {
-          throw new Error("Token issued time is in the future")
-        }
 
         if (!firebasePayload.sub) {
           throw new Error("Token subject is empty")
-        }
-
-        if (firebasePayload.auth_time > now) {
-          throw new Error("Token auth time is in the future")
         }
 
         return {

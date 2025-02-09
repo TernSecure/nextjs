@@ -1,81 +1,99 @@
-'use server'
-import { cookies, headers } from "next/headers"
+import { cache } from "react"
+import { cookies } from "next/headers"
 import type { UserInfo } from "./types"
+import { verifyFirebaseToken } from "./jwt-edge"
+import { TernSecureError } from "../errors"
+
 
 
 export interface AuthResult {
   user: UserInfo | null
-  token: string | null
   error: Error | null
 }
-
 
   /**
    * Get the current authenticated user from the session or token
    */
-  export async function auth(): Promise<AuthResult> {
-    try {
-      const headersList = await headers()
-      const cookieStore = await cookies()
+export const auth = cache(async (): Promise<AuthResult> => {
+  try {
+    // Get all active sessions for debugging
+   console.log("auth: Starting auth check...")
+   const cookieStore = await cookies()
 
-      const userId = headersList.get('x-user-id')
-      const authTime = headersList.get('x-auth-time')
-      const emailVerified = headersList.get('x-auth-verified') === 'true'
-
-      if (userId) {
-        const token = cookieStore.get("_session_cookie")?.value || 
-                     cookieStore.get("_session_token")?.value || 
-                     null
-  
-        return {
-          user: {
-            uid: userId,
-            email: headersList.get('x-user-email') || null,
-            emailVerified,
-            authTime: authTime ? parseInt(authTime) : undefined
-          },
-          token,
-          error: null
+    // First try session cookie as it's more secure
+    const sessionCookie = cookieStore.get("_session_cookie")?.value
+    if (sessionCookie) {
+      const result = await verifyFirebaseToken(sessionCookie, true)
+      if (result.valid && result.uid) {
+        const user: UserInfo = {
+          uid: result.uid ?? '',
+          email: result.email || null,
+          authTime: result.authTime
         }
-      }
-
-      return {
-        user: null,
-        token: null,
-        error: new Error("No valid session or token found"),
-      }
-    } catch (error) {
-      console.error("Error in get AuthResult:", error)
-      return {
-        user: null,
-        token: null,
-        error: error instanceof Error ? error : new Error("An unknown error occurred"),
+        return { user, error: null }
       }
     }
-}
+
+    // Fallback to ID token
+    const idToken = cookieStore.get("_session_token")?.value
+    if (idToken) {
+      const result = await verifyFirebaseToken(idToken, false)
+      if (result.valid) {
+        const user: UserInfo = {
+          uid: result.uid ?? '',
+          email: result.email || null,
+          authTime: result.authTime
+        }
+        return { user, error: null }
+      }
+    }
+
+      return {
+          user: null,
+          error: new TernSecureError('UNAUTHENTICATED', 'No valid session found')
+      }
+
+    } catch (error) {
+      console.error("Error in Auth:", error)
+      if (error instanceof TernSecureError) {
+        return {
+          user: null,
+          error
+        }
+      }
+      return {
+        user: null,
+        error: new TernSecureError('INTERNAL_ERROR', 'An unexpected error occurred')
+      }
+    }
+  })
 
 /**
  * Type guard to check if user is authenticated
  */
-export async function isAuthenticated(): Promise<boolean> {
-  const authResult = await auth()
-  return authResult.user !== null
-}
+export const isAuthenticated = cache(async (): Promise<boolean>  => {
+  const { user } = await auth()
+  return user !== null
+})
 
 /**
  * Get user info from auth result
  */
-export async function getUserInfo(): Promise<UserInfo | null> {
-  const authResult = await auth()
-  if (!authResult.user) {
-    return null
+export const getUser = cache(async (): Promise<UserInfo | null> => {
+  const { user } = await auth()
+  return user
+})
+
+/**
+ * Require authentication
+ * Throws error if not authenticated
+ */
+export const requireAuth = cache(async (): Promise<UserInfo> => {
+  const { user, error } = await auth()
+
+  if (!user) {
+    throw error || new Error("Authentication required")
   }
 
-  return {
-    uid: authResult.user.uid,
-    email: authResult.user.email,
-    emailVerified: authResult.user.emailVerified,
-    authTime: authResult.user.authTime
-  }
-  }
-
+  return user
+})

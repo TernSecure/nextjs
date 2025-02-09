@@ -19,7 +19,8 @@ import { getValidRedirectUrl } from '../utils/construct'
 import { handleInternalRoute } from '../app-router/route-handler/internal-route'
 import type { SignInResponse } from '../types'
 import { useAuth } from '../boundary/hooks/useAuth'
-import { getErrorAlertVariant, ErrorCode } from '../errors'
+import { getErrorAlertVariant } from '../errors'
+import { twMerge } from 'tailwind-merge'
 
 
 
@@ -42,6 +43,10 @@ export interface SignInProps {
     description?: string
     socialButton?: string
   }
+}
+
+const prefix = (classes: string) => {
+  return classes.split(' ').map(cls => `tern-${cls}`).join(' ')
 }
 
 

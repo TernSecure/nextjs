@@ -8,7 +8,8 @@ export interface UserInfo {
   
   
   export interface SessionResult {
-    isAuthenticated: boolean
     user: UserInfo | null
+    token: string | null
+    sessionId: string | null
     error?: string
   }
