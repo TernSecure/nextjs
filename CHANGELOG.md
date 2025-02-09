@@ -1,5 +1,29 @@
 # @tern-secure/nextjs
 
+## 4.2.3
+
+### Patch Changes
+
+- b0e8300: refactor: Enhance authentication and session management
+
+  - Improve token verification and error handling in JWT modules
+  - Update authentication methods to use centralized error handling
+  - Modify session verification to support more flexible token checks
+  - Refactor middleware to handle authentication redirects more robustly
+  - Add caching to authentication methods for improved performance
+
+## 4.2.2
+
+### Patch Changes
+
+- 496c2a9: refactor: Centralize types and improve JWT token verification
+
+  - Create new `types.ts` file to centralize shared type definitions
+  - Enhance JWT verification with more robust error handling and logging
+  - Add caching for JWKS using React cache
+  - Improve token decoding and validation logic
+  - Update import paths across authentication modules
+
 ## 4.2.1
 
 ### Patch Changes
