@@ -1,5 +1,17 @@
 # @tern-secure/nextjs
 
+## 4.2.5
+
+### Patch Changes
+
+- 6240f3a: refactor: Improve TernSecure middleware response handling
+
+  - Update middleware to return Response or undefined
+  - Modify authentication flow to use NextResponse.redirect
+  - Simplify error handling and callback processing
+  - Make callback parameter optional
+  - Streamline middleware return logic
+
 ## 4.2.4
 
 ### Patch Changes
