@@ -1,5 +1,18 @@
 # @tern-secure/nextjs
 
+## 4.2.4
+
+### Patch Changes
+
+- 45aadf2: refactor: Simplify TernSecure middleware and error handling
+
+  - Remove unused imports and error classes
+  - Modify route matching regex pattern
+  - Streamline authentication middleware logic
+  - Add Edge runtime support
+  - Improve error redirection and handling
+  - Clean up response headers
+
 ## 4.2.3
 
 ### Patch Changes
