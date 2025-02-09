@@ -1,8 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import type { UserInfo } from './types'
-import { TernSecureError } from '../errors';
 
-
+export const runtime = "edge"
 
 interface Auth {
   user: UserInfo | null
@@ -22,11 +21,9 @@ type MiddlewareCallback = (
 export function createRouteMatcher(patterns: string[]) {
   return (request: NextRequest): boolean => {
     const { pathname } = request.nextUrl
-    return patterns.some(pattern => {
+    return patterns.some((pattern) => {
       // Convert route pattern to regex
-      const regexPattern = new RegExp(
-        `^${pattern.replace(/\*/g, '.*').replace(/\((.*)\)/, '(?:$1)?')}$`
-      )
+      const regexPattern = new RegExp(`^${pattern.replace(/\*/g, ".*").replace(/$$(.*)$$/, "(?:$1)?")}$`)
       return regexPattern.test(pathname)
     })
   }
@@ -53,44 +50,40 @@ export function ternSecureMiddleware(callback: MiddlewareCallback) {
             if (currentPath !== '/sign-in') {
               const redirectUrl = new URL('/sign-in', request.url)
               redirectUrl.searchParams.set('redirect', currentPath)
-              throw new TernSecureError('UNAUTHENTICATED', redirectUrl.toString())
-            } else {
-              throw new Error('UNAUTHENTICATED')
+              throw new Error("UNAUTHENTICATED")
             }
           }
-        }
+        },
       }
 
-      if (!callback) {
-        return NextResponse.next()
-      }
+    //if (!callback) {
+    //    return NextResponse.next()
+    //  }
 
-
-
+    if (callback){
       try {
         await callback(auth, request)
-        return NextResponse.next()
       } catch (error) {
-        if (error instanceof Error && error.message === 'Unauthorized access') {
-          console.log('middleware: Unauthorized access, redirecting to sign-in')
-          return NextResponse.redirect(error.message)
+        // Handle authentication errors
+        if (error instanceof Error && error.message === "UNAUTHENTICATED") {
+          const redirectUrl = new URL("/sign-in", request.url)
+          redirectUrl.searchParams.set("redirect", request.nextUrl.pathname)
+          return NextResponse.redirect(redirectUrl)
         }
+        // Re-throw other errors
         throw error
       }
+    }
 
+      // Continue to the next middleware or route handler
+      const response = NextResponse.next()
+
+      // Clean up response
+      response.headers.delete("x-middleware-next")
+
+      return response
     } catch (error) {
-      console.error("Middleware error:", {
-        error:
-          error instanceof Error
-            ? {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
-              }
-            : error,
-        path: request.nextUrl.pathname,
-      })
-
+      console.error("Middleware error:", error)
       return NextResponse.redirect(new URL('/sign-in', request.url))
     }
   }
