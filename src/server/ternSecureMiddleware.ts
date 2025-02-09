@@ -1,14 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifySession } from './edge-session'
+import { type NextRequest, NextResponse } from 'next/server';
 import type { UserInfo } from './types'
+import { TernSecureError } from '../errors';
 
-
-export const runtime = "edge"
 
 
 interface Auth {
   user: UserInfo | null
-  token: string | null
+  sessionId : string | null
   protect: () => Promise<void>
 }
 
@@ -36,42 +34,6 @@ export function createRouteMatcher(patterns: string[]) {
 
 
 /**
- * Edge-compatible auth check
- */
-async function edgeAuth(request: NextRequest): Promise<Auth> {
-  async function protect() {
-    throw new Error("Unauthorized access")
-  }
-
-  try {
-    const sessionResult = await verifySession(request)
-
-    if (sessionResult.isAuthenticated && sessionResult.user) {
-      return {
-        user: sessionResult.user,
-        token: request.cookies.get("_session_cookie")?.value || request.cookies.get("_session_token")?.value || null,
-        protect: async () => {},
-      }
-    }
-
-    return {
-      user: null,
-      token: null,
-      protect,
-    }
-  } catch (error) {
-    console.error("Auth check error:", error)
-    return {
-      user: null,
-      token: null,
-      protect,
-    }
-  }
-}
-
-
-
-/**
  * Middleware factory that handles authentication and custom logic
  * @param customHandler Optional function for additional custom logic
  */
@@ -79,35 +41,39 @@ async function edgeAuth(request: NextRequest): Promise<Auth> {
 export function ternSecureMiddleware(callback: MiddlewareCallback) {
   return async function middleware(request: NextRequest) {
     try {
-      const auth = await edgeAuth(request)
 
-      try {
-        
-        await callback(auth, request)
+      const hasCookies = request.cookies.has('_session_cookie') || request.cookies.has('_session_token')
 
-        const response = NextResponse.next()
-
-        if (auth.user) {
-          // Set auth headers
-          response.headers.set("x-user-id", auth.user.uid)
-          if (auth.user.email) {
-            response.headers.set("x-user-email", auth.user.email)
-          }
-          if (auth.user.emailVerified !== undefined) {
-            response.headers.set("x-email-verified", auth.user.emailVerified.toString())
-          }
-          if (auth.user.authTime) {
-            response.headers.set("x-auth-time", auth.user.authTime.toString())
+      const auth: Auth = {
+        user: null,
+        sessionId: null,
+        protect: async () => {
+          if (!hasCookies) {
+            const currentPath = request.nextUrl.pathname
+            if (currentPath !== '/sign-in') {
+              const redirectUrl = new URL('/sign-in', request.url)
+              redirectUrl.searchParams.set('redirect', currentPath)
+              throw new TernSecureError('UNAUTHENTICATED', redirectUrl.toString())
+            } else {
+              throw new Error('UNAUTHENTICATED')
+            }
           }
         }
+      }
 
-        return response
+      if (!callback) {
+        return NextResponse.next()
+      }
+
+
+
+      try {
+        await callback(auth, request)
+        return NextResponse.next()
       } catch (error) {
-        // Handle unauthorized access
         if (error instanceof Error && error.message === 'Unauthorized access') {
-          const redirectUrl = new URL('/sign-in', request.url)
-          redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
-          return NextResponse.redirect(redirectUrl)
+          console.log('middleware: Unauthorized access, redirecting to sign-in')
+          return NextResponse.redirect(error.message)
         }
         throw error
       }
@@ -125,8 +91,7 @@ export function ternSecureMiddleware(callback: MiddlewareCallback) {
         path: request.nextUrl.pathname,
       })
 
-      const redirectUrl = new URL("/sign-in", request.url)
-      return NextResponse.redirect(redirectUrl)
+      return NextResponse.redirect(new URL('/sign-in', request.url))
     }
   }
 }
