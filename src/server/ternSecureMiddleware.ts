@@ -5,14 +5,14 @@ export const runtime = "edge"
 
 interface Auth {
   user: UserInfo | null
-  sessionId : string | null
-  protect: () => Promise<void>
+  sessionId: string | null
+  protect: () => Promise<Response | undefined>
 }
 
 type MiddlewareCallback = (
   auth: Auth,
   request: NextRequest
-) => Promise<void>
+) => Promise<Response | undefined>
 
 
 /**
@@ -35,7 +35,7 @@ export function createRouteMatcher(patterns: string[]) {
  * @param customHandler Optional function for additional custom logic
  */
 
-export function ternSecureMiddleware(callback: MiddlewareCallback) {
+export function ternSecureMiddleware(callback?: MiddlewareCallback) {
   return async function middleware(request: NextRequest) {
     try {
 
@@ -50,7 +50,7 @@ export function ternSecureMiddleware(callback: MiddlewareCallback) {
             if (currentPath !== '/sign-in') {
               const redirectUrl = new URL('/sign-in', request.url)
               redirectUrl.searchParams.set('redirect', currentPath)
-              throw new Error("UNAUTHENTICATED")
+              return NextResponse.redirect(redirectUrl)
             }
           }
         },
@@ -61,27 +61,15 @@ export function ternSecureMiddleware(callback: MiddlewareCallback) {
     //  }
 
     if (callback){
-      try {
-        await callback(auth, request)
-      } catch (error) {
-        // Handle authentication errors
-        if (error instanceof Error && error.message === "UNAUTHENTICATED") {
-          const redirectUrl = new URL("/sign-in", request.url)
-          redirectUrl.searchParams.set("redirect", request.nextUrl.pathname)
-          return NextResponse.redirect(redirectUrl)
+        const result = await callback(auth, request)
+        if (result instanceof Response) {
+          return result
         }
-        // Re-throw other errors
-        throw error
       }
-    }
+
 
       // Continue to the next middleware or route handler
-      const response = NextResponse.next()
-
-      // Clean up response
-      response.headers.delete("x-middleware-next")
-
-      return response
+      return NextResponse.next()
     } catch (error) {
       console.error("Middleware error:", error)
       return NextResponse.redirect(new URL('/sign-in', request.url))
