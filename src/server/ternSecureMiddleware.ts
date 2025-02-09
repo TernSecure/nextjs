@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextMiddleware, type NextRequest } from 'next/server';
 import type { UserInfo } from './types'
 
 export const runtime = "edge"
@@ -6,13 +6,13 @@ export const runtime = "edge"
 interface Auth {
   user: UserInfo | null
   sessionId: string | null
-  protect: () => Promise<Response | undefined>
+  protect: () => Promise<void | Response>
 }
 
 type MiddlewareCallback = (
   auth: Auth,
   request: NextRequest
-) => Promise<Response | undefined>
+) => Promise<void | Response>
 
 
 /**
@@ -35,7 +35,7 @@ export function createRouteMatcher(patterns: string[]) {
  * @param customHandler Optional function for additional custom logic
  */
 
-export function ternSecureMiddleware(callback?: MiddlewareCallback) {
+export function ternSecureMiddleware(callback?: MiddlewareCallback): NextMiddleware {
   return async function middleware(request: NextRequest) {
     try {
 
@@ -72,7 +72,8 @@ export function ternSecureMiddleware(callback?: MiddlewareCallback) {
       return NextResponse.next()
     } catch (error) {
       console.error("Middleware error:", error)
-      return NextResponse.redirect(new URL('/sign-in', request.url))
+      const redirectUrl = new URL("/sign-in", request.url)
+      return NextResponse.redirect(redirectUrl)
     }
   }
 }
