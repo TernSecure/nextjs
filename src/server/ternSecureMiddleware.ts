@@ -1,7 +1,7 @@
 import { NextResponse, type NextMiddleware, type NextRequest } from 'next/server';
 import type { UserInfo } from './types'
 
-export const runtime = "edge"
+export const runtime = "experimental-edge"
 
 interface Auth {
   user: UserInfo | null
@@ -39,7 +39,9 @@ export function ternSecureMiddleware(callback?: MiddlewareCallback): NextMiddlew
   return async function middleware(request: NextRequest) {
     try {
 
-      const hasCookies = request.cookies.has('_session_cookie') || request.cookies.has('_session_token')
+      const sessionCookie = request.cookies.get("_session_cookie")
+      const idToken = request.cookies.get("_session_token")
+      const hasCookies = !!sessionCookie || !!idToken
 
       const auth: Auth = {
         user: null,
@@ -60,20 +62,32 @@ export function ternSecureMiddleware(callback?: MiddlewareCallback): NextMiddlew
     //    return NextResponse.next()
     //  }
 
-    if (callback){
+    if (callback) {
         const result = await callback(auth, request)
         if (result instanceof Response) {
           return result
         }
-      }
+    }
 
 
       // Continue to the next middleware or route handler
-      return NextResponse.next()
+      const response = NextResponse.next()
+
+            // Transfer auth state to server runtime via secure cookie
+      if (auth.sessionId) {
+        response.cookies.set("__tern_auth_state", auth.sessionId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 60 * 15, // 15 minutes
+        })
+      }
+
+      return response
     } catch (error) {
       console.error("Middleware error:", error)
-      const redirectUrl = new URL("/sign-in", request.url)
-      return NextResponse.redirect(redirectUrl)
+      return NextResponse.redirect(new URL("/sign-in", request.url))
     }
   }
 }
