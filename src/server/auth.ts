@@ -20,11 +20,20 @@ export const auth = cache(async (): Promise<AuthResult> => {
    console.log("auth: Starting auth check...")
    const cookieStore = await cookies()
 
+   const authState = cookieStore.get("__tern_auth_state")?.value
+
+   if (!authState) {
+     return {
+       user: null,
+       error: new Error("No auth state found"),
+     }
+   }
+
     // First try session cookie as it's more secure
     const sessionCookie = cookieStore.get("_session_cookie")?.value
     if (sessionCookie) {
       const result = await verifyFirebaseToken(sessionCookie, true)
-      if (result.valid && result.uid) {
+      if (result.valid) {
         const user: UserInfo = {
           uid: result.uid ?? '',
           email: result.email || null,
