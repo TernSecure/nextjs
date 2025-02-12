@@ -1,7 +1,7 @@
-import type { UserInfo } from "./types"
+import type { User } from "./types"
 
 interface RequestContext {
-  user: UserInfo
+  user: UserVerificationRequirement
   sessionId: string
 }
 
@@ -9,7 +9,7 @@ interface RequestContext {
 declare global {
   var __ternSecure: {
     context: RequestContext | null
-    sessions: Map<string, UserInfo>
+    sessions: Map<string, User>
   }
 }
 
@@ -35,13 +35,13 @@ export class ContextStore {
     return context
   }
 
-  static setSession(sessionId: string, user: UserInfo) {
+  static setSession(sessionId: string, user: User) {
     console.log("ContextStore: Setting session:", { sessionId, user })
     global.__ternSecure.sessions.set(sessionId, user)
     console.log("ContextStore: Session set successfully")
   }
 
-  static getSession(sessionId: string): UserInfo | null {
+  static getSession(sessionId: string): User | null {
     const user = global.__ternSecure.sessions.get(sessionId) || null
     console.log("ContextStore: Getting session:", { sessionId, user })
     return user

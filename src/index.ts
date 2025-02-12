@@ -12,6 +12,7 @@ export { SignIn } from './components/sign-in'
 export { SignOutButton } from './components/sign-out-button'
 export { SignOut } from './components/sign-out'
 export { SignUp } from './components/sign-up'
+export type { TernSecureUser, TernSecureUserData } from './types'
 
 //export const TernSecureProvider = TernSecureServerProvider
 //export type { TernSecureState }

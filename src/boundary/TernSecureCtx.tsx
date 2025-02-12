@@ -2,10 +2,10 @@
 
 import { createContext, useContext } from 'react'
 import { ternSecureAuth } from '../utils/client-init';
-import { User } from 'firebase/auth';
-import type { TernSecureState, SignInResponse } from '../types';
+import type { TernSecureState, SignInResponse, TernSecureUser } from '../types';
 
-export const TernSecureUser = (): User | null => {
+
+export const getCurrentUser = (): TernSecureUser | null => {
   return ternSecureAuth.currentUser;
 }
 
