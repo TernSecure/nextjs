@@ -57,6 +57,8 @@ jobs:
       - name: Trigger Workflows
         if: steps.changesets.outputs.publish == 'true'
         uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.changesets.outputs.version }}
           release_name: Release v${{ steps.changesets.outputs.version }}
