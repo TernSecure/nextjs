@@ -46,7 +46,7 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: npm release
+          publish: npm publish --access public --loglevel verbose
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
