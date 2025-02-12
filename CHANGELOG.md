@@ -1,5 +1,53 @@
 # @tern-secure/nextjs
 
+## 4.2.7
+
+### Patch Changes
+
+- a711aef: feat: Enhance authentication state management and middleware
+
+  - Add auth state cookie for server-side authentication tracking
+  - Update auth middleware to set secure auth state cookie
+  - Modify server-side auth check to validate auth state
+  - Remove unused import in sign-in component
+  - Update Edge runtime configuration in middleware
+
+## 4.2.6
+
+### Patch Changes
+
+- 1757b10: refactor: Improve TernSecure middleware type definitions and error handling
+
+  - Update import types from 'next/server'
+  - Modify function signatures to improve type safety
+  - Enhance error handling with explicit redirect URL creation
+  - Adjust return types for middleware and callback functions
+
+## 4.2.5
+
+### Patch Changes
+
+- 6240f3a: refactor: Improve TernSecure middleware response handling
+
+  - Update middleware to return Response or undefined
+  - Modify authentication flow to use NextResponse.redirect
+  - Simplify error handling and callback processing
+  - Make callback parameter optional
+  - Streamline middleware return logic
+
+## 4.2.4
+
+### Patch Changes
+
+- 45aadf2: refactor: Simplify TernSecure middleware and error handling
+
+  - Remove unused imports and error classes
+  - Modify route matching regex pattern
+  - Streamline authentication middleware logic
+  - Add Edge runtime support
+  - Improve error redirection and handling
+  - Clean up response headers
+
 ## 4.2.3
 
 ### Patch Changes
