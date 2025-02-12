@@ -1,7 +1,7 @@
-import type { UserInfo } from "./types"
+import type { User } from "./types"
 
 interface RequestContext {
-  user: UserInfo
+  user: User
   sessionId: string
 }
 
@@ -22,7 +22,7 @@ export class Store {
     if (!global[STORE_KEY]) {
       global[STORE_KEY] = {
         contexts: new Map<string, RequestContext>(),
-        sessions: new Map<string, UserInfo>(),
+        sessions: new Map<string, User>(),
         currentSession: null as RequestContext | null
       }
     }
@@ -74,12 +74,12 @@ export class Store {
     return null
   }
 
-  static setSession(sessionId: string, user: UserInfo) {
+  static setSession(sessionId: string, user: User) {
     const store = this.getStore()
     store.sessions.set(sessionId, user)
   }
 
-  static getSession(sessionId: string): UserInfo | null {
+  static getSession(sessionId: string): User | null {
     const store = this.getStore()
     return store.sessions.get(sessionId) || null
   }

@@ -1,5 +1,19 @@
 import { FirebaseOptions } from 'firebase/app'
+import { User as FirebaseUser } from 'firebase/auth'
 import { ERRORS } from './errors'
+
+
+/**
+ * TernSecure User
+ */
+export type TernSecureUser = FirebaseUser
+
+export type TernSecureUserData = {
+  uid: string
+  email: string | null
+  emailVerified?: boolean
+  displayName?: string | null
+}
 
 
 /**

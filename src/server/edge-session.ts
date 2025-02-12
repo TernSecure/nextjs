@@ -1,6 +1,6 @@
 import { verifyFirebaseToken } from "./jwt-edge"
 import type { NextRequest } from "next/server"
-import type { SessionResult, UserInfo } from "./types"
+import type { SessionResult, User } from "./types"
 
 
 
@@ -17,7 +17,7 @@ export async function verifySession(request: NextRequest): Promise<SessionResult
     if (sessionCookie) {
       const result = await verifyFirebaseToken(sessionCookie, true)
       if (result.valid) {
-          const user: UserInfo = {
+          const user: User = {
             uid: result.uid ?? '',
             email: result.email || null,
             emailVerified: result.emailVerified ?? false,
@@ -37,7 +37,7 @@ export async function verifySession(request: NextRequest): Promise<SessionResult
     if (idToken) {
       const result = await verifyFirebaseToken(idToken, false)
       if (result.valid) {
-        const user: UserInfo =  {
+        const user: User =  {
             uid: result.uid ?? '',
             email: result.email || null,
             emailVerified: result.emailVerified ?? false,

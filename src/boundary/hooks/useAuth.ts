@@ -1,9 +1,7 @@
 "use client"
 
-import { useTernSecure } from '../TernSecureCtx'
-import {  User } from 'firebase/auth'
-import { TernSecureUser } from '../TernSecureCtx'
-import type { SignInResponse } from '../../types'
+import { getCurrentUser, useTernSecure } from '../TernSecureCtx'
+import type { SignInResponse, TernSecureUser } from '../../types'
 
 
 export function useAuth() {
@@ -21,7 +19,7 @@ export function useAuth() {
     signOut
   } = useTernSecure('useAuth')
 
-  const user: User | null = TernSecureUser()
+  const user: TernSecureUser | null = getCurrentUser()
   const authResponse: SignInResponse = getAuthError()
 
 

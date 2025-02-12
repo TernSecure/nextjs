@@ -1,13 +1,13 @@
 import { cache } from "react"
 import { cookies } from "next/headers"
-import type { UserInfo } from "./types"
+import type { User } from "./types"
 import { verifyFirebaseToken } from "./jwt-edge"
 import { TernSecureError } from "../errors"
 
 
 
 export interface AuthResult {
-  user: UserInfo | null
+  user: User | null
   error: Error | null
 }
 
@@ -20,21 +20,12 @@ export const auth = cache(async (): Promise<AuthResult> => {
    console.log("auth: Starting auth check...")
    const cookieStore = await cookies()
 
-   const authState = cookieStore.get("__tern_auth_state")?.value
-
-   if (!authState) {
-     return {
-       user: null,
-       error: new Error("No auth state found"),
-     }
-   }
-
     // First try session cookie as it's more secure
     const sessionCookie = cookieStore.get("_session_cookie")?.value
     if (sessionCookie) {
       const result = await verifyFirebaseToken(sessionCookie, true)
       if (result.valid) {
-        const user: UserInfo = {
+        const user: User = {
           uid: result.uid ?? '',
           email: result.email || null,
           authTime: result.authTime
@@ -48,7 +39,7 @@ export const auth = cache(async (): Promise<AuthResult> => {
     if (idToken) {
       const result = await verifyFirebaseToken(idToken, false)
       if (result.valid) {
-        const user: UserInfo = {
+        const user: User = {
           uid: result.uid ?? '',
           email: result.email || null,
           authTime: result.authTime
@@ -88,7 +79,7 @@ export const isAuthenticated = cache(async (): Promise<boolean>  => {
 /**
  * Get user info from auth result
  */
-export const getUser = cache(async (): Promise<UserInfo | null> => {
+export const getUser = cache(async (): Promise<User | null> => {
   const { user } = await auth()
   return user
 })
@@ -97,7 +88,7 @@ export const getUser = cache(async (): Promise<UserInfo | null> => {
  * Require authentication
  * Throws error if not authenticated
  */
-export const requireAuth = cache(async (): Promise<UserInfo> => {
+export const requireAuth = cache(async (): Promise<User> => {
   const { user, error } = await auth()
 
   if (!user) {

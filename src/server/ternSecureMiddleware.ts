@@ -1,10 +1,10 @@
 import { NextResponse, type NextMiddleware, type NextRequest } from 'next/server';
-import type { UserInfo } from './types'
+import type { User } from './types'
 
-export const runtime = "experimental-edge"
+export const runtime = "edge"
 
 interface Auth {
-  user: UserInfo | null
+  user: User | null
   sessionId: string | null
   protect: () => Promise<void | Response>
 }
@@ -58,10 +58,6 @@ export function ternSecureMiddleware(callback?: MiddlewareCallback): NextMiddlew
         },
       }
 
-    //if (!callback) {
-    //    return NextResponse.next()
-    //  }
-
     if (callback) {
         const result = await callback(auth, request)
         if (result instanceof Response) {
@@ -71,23 +67,11 @@ export function ternSecureMiddleware(callback?: MiddlewareCallback): NextMiddlew
 
 
       // Continue to the next middleware or route handler
-      const response = NextResponse.next()
-
-            // Transfer auth state to server runtime via secure cookie
-      if (auth.sessionId) {
-        response.cookies.set("__tern_auth_state", auth.sessionId, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 60 * 15, // 15 minutes
-        })
-      }
-
-      return response
+      return  NextResponse.next()
     } catch (error) {
       console.error("Middleware error:", error)
-      return NextResponse.redirect(new URL("/sign-in", request.url))
+      const redirectUrl = new URL("/sign-in", request.url)
+      return NextResponse.redirect(redirectUrl)
     }
   }
 }
