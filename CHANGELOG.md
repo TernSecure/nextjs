@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 4.2.9
+
+### Patch Changes
+
+- 21ae76d: chore: Update Firebase authentication persistence to local storage
+
 ## 4.2.8
 
 ### Patch Changes
