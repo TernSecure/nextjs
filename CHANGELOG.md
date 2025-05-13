@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 4.2.10
+
+### Patch Changes
+
+- 4f099c4: chore: Update Tailwind CSS Configuration
+
 ## 4.2.9
 
 ### Patch Changes
