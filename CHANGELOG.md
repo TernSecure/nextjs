@@ -1,5 +1,11 @@
 # @tern-secure/nextjs
 
+## 4.2.11
+
+### Patch Changes
+
+- bc8ab32: chore: updated css
+
 ## 4.2.10
 
 ### Patch Changes
